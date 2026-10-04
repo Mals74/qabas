@@ -5,7 +5,7 @@ import Cards from "../components/Cards.jsx";
 import { ErrorBox, Loading, PageHeader } from "../components/Common.jsx";
 import { Bulb, Trash } from "../components/Icons.jsx";
 import Player from "../components/Player.jsx";
-import { AnySegment, TextSegment } from "../components/Segments.jsx";
+import { AnySegment, Playback, TextSegment } from "../components/Segments.jsx";
 import { SourceTag, TimePill } from "../components/Tags.jsx";
 import { QualityNote } from "../components/Unsure.jsx";
 
@@ -30,6 +30,8 @@ export default function LessonPage() {
   const [focus, setFocus] = useState(params.get("t") ? Number(params.get("t")) : null);
   const [toast, setToast] = useState("");
   const player = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  const [playFrom, setPlayFrom] = useState(null);   // the segment whose play button started playback
 
   // Load, and keep polling while the lesson is still being processed
   useEffect(() => {
@@ -60,6 +62,17 @@ export default function LessonPage() {
     }
   };
 
+  // Play button: same segment -> pause / resume; another segment -> jump there and play
+  const toggle = (seconds) => {
+    if (playFrom === seconds && player.current?.hasMedia()) {
+      if (playing) player.current.pause();
+      else player.current.resume();
+      return;
+    }
+    setPlayFrom(seconds);
+    seek(seconds);
+  };
+
   // A segment came back from the server after the student settled an unsure word
   const updateSegment = (seg) =>
     setLesson((l) => ({ ...l, segments: l.segments.map((s) => (s.id === seg.id ? seg : s)) }));
@@ -77,6 +90,7 @@ export default function LessonPage() {
   const busy = lesson.status === "pending" || lesson.status === "processing";
 
   return (
+    <Playback.Provider value={{ from: playFrom, playing, toggle }}>
     <div className="page lesson-page">
       <PageHeader title={lesson.title} subtitle={lesson.sheikh} />
       <div className="meta-row">
@@ -92,7 +106,8 @@ export default function LessonPage() {
         <p className="notice small">الوضع التجريبي (دون مفتاح Gemini): التفريغ المعروض مثال ثابت وليس من هذا التسجيل.</p>
       )}
 
-      <Player ref={player} youtubeId={lesson.youtube_id} mediaUrl={lesson.media_url} mediaKind={lesson.media_kind} />
+      <Player ref={player} youtubeId={lesson.youtube_id} mediaUrl={lesson.media_url} mediaKind={lesson.media_kind}
+        onPlayingChange={setPlaying} />
 
       {busy && (
         <div className="processing">
@@ -157,6 +172,7 @@ export default function LessonPage() {
 
       {toast && <div className="toast">{toast}</div>}
     </div>
+    </Playback.Provider>
   );
 }
 

@@ -4,7 +4,8 @@ services:
     name: qabas
     runtime: docker
     plan: free
-    healthCheckPath: /api/status
+    # No HTTP health check on purpose: on the free plan (0.1 CPU) processing a lesson can delay an answer past
+    # Render's 5-second check, and Render then restarts the server and kills the lesson being processed.
     envVars:
       - key: GEMINI_API_KEY
         sync: false            # secret: entered in the Render dashboard, never in the repo

@@ -38,8 +38,26 @@ def startup() -> None:
     with Session(engine) as s:
         fresh = s.exec(select(func.count()).select_from(Book)).one() == 0
         seed.import_seeds(s)                              # real lessons shipped in the repo (data/seed)
+        # A restart kills any lesson being processed: say so instead of leaving it "processing" forever
+        for les in s.exec(select(Lesson).where(Lesson.status.in_(["pending", "processing"]))).all():
+            les.status, les.progress = "error", ""
+            les.error = "انقطعت المعالجة لأن الخادم أُعيد تشغيله. احذف الدرس وأضفه مرة أخرى."
+            s.add(les)
+        s.commit()
         if fresh and SHOW_SAMPLE:                         # the labelled demo lesson (turn off with SHOW_SAMPLE=0)
             _seed_sample(s)
+    threading.Thread(target=_warm_up, daemon=True).start()
+
+
+def _warm_up() -> None:
+    """Build the Quran and hadith search indexes once, while the server is idle, not in the middle of a lesson."""
+    try:
+        from . import hadith_index
+        quran._index()
+        hadith_index.get_index()
+        print("[startup] Quran and hadith indexes ready", flush=True)
+    except Exception as e:                                   # the lesson pipeline builds them later if this fails
+        print(f"[startup] warm-up skipped: {e}", flush=True)
 
 
 def _seed_sample(s: Session) -> None:

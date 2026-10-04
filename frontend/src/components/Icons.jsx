@@ -41,6 +41,9 @@ export const Chevron = ({ size = 18 }) => (
 export const Play = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor" /></svg>
 );
+export const Pause = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24"><path d="M6.5 4.5h4v15h-4zM13.5 4.5h4v15h-4z" fill="currentColor" /></svg>
+);
 export const Plus = ({ size = 18 }) => (
   <svg {...base(size)}><path d="M12 5v14M5 12h14" /></svg>
 );

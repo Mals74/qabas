@@ -1,9 +1,25 @@
 // Rendering of transcript segments: Quran, hadith, matn, sharh.
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { api } from "../api.js";
-import { External, Play } from "./Icons.jsx";
+import { External, Pause, Play } from "./Icons.jsx";
 import { SourceTag, TimePill } from "./Tags.jsx";
 import { MarkedText } from "./Unsure.jsx";
+
+// Which segment's play button started the recording, and whether it is playing now (set by the lesson page)
+export const Playback = createContext({ from: null, playing: false, toggle: null });
+
+// Play from this segment; pressed again while it plays, it pauses (and then resumes)
+function PlayButton({ start, onSeek }) {
+  const pb = useContext(Playback);
+  const mine = pb.from === start;
+  const active = mine && pb.playing;
+  return (
+    <button className="play-btn" onClick={() => (pb.toggle ? pb.toggle(start) : onSeek(start))}
+      aria-label={active ? "إيقاف مؤقت" : "تشغيل من هنا"}>
+      {active ? <Pause /> : <Play />}
+    </button>
+  );
+}
 
 // Small notes shown under any segment
 function SegmentFlags({ seg }) {
@@ -142,7 +158,7 @@ export function TextSegment({ seg, onSeek, onChange }) {
     <div className={`seg seg-${seg.kind}`}>
       <div className="seg-side">
         <TimePill time={seg.time} onClick={() => onSeek(seg.start)} />
-        <button className="play-btn" onClick={() => onSeek(seg.start)} aria-label="تشغيل من هنا"><Play /></button>
+        <PlayButton start={seg.start} onSeek={onSeek} />
       </div>
       <div className="seg-body">
         {seg.kind === "matn" && <span className="kind-label">المتن</span>}

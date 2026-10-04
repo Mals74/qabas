@@ -1,12 +1,21 @@
 // Tiny API client for the FastAPI backend.
 
 async function request(path, options = {}) {
-  const res = await fetch(`/api${path}`, options);
+  let res;
+  try {
+    res = await fetch(`/api${path}`, options);
+  } catch {
+    throw new Error("تعذّر الاتصال بالخادم. تأكد من الإنترنت ثم أعد المحاولة.");
+  }
   const isJson = res.headers.get("content-type")?.includes("application/json");
   const body = isJson ? await res.json() : null;
   if (!res.ok) {
     // FastAPI puts error messages in `detail`
-    throw new Error(body?.detail || "حدث خطأ غير متوقع");
+    if (body?.detail) throw new Error(typeof body.detail === "string" ? body.detail : "طلب غير صالح");
+    // No JSON: the server itself did not answer (502/503/504 = waking up or restarting on the free plan)
+    if ([502, 503, 504].includes(res.status))
+      throw new Error("الخادم يستيقظ أو يُعاد تشغيله. انتظر دقيقة ثم حدّث الصفحة.");
+    throw new Error(`حدث خطأ غير متوقع (رمز ${res.status}). حدّث الصفحة، وإن تكرر أرسل لنا لقطة شاشة.`);
   }
   return body;
 }

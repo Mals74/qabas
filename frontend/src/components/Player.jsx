@@ -18,7 +18,7 @@ function loadYouTubeApi() {
   return ytReady;
 }
 
-const Player = forwardRef(function Player({ youtubeId, mediaUrl, mediaKind }, ref) {
+const Player = forwardRef(function Player({ youtubeId, mediaUrl, mediaKind, onPlayingChange }, ref) {
   const holder = useRef(null);   // div replaced by the YouTube iframe
   const yt = useRef(null);       // YT.Player instance
   const media = useRef(null);    // <audio>/<video> element
@@ -34,6 +34,7 @@ const Player = forwardRef(function Player({ youtubeId, mediaUrl, mediaKind }, re
       yt.current = new YT.Player(el, {
         videoId: youtubeId,
         playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+        events: { onStateChange: (e) => onPlayingChange?.(e.data === 1 || e.data === 3) },   // 1 playing, 3 buffering
       });
     });
     return () => {
@@ -54,6 +55,14 @@ const Player = forwardRef(function Player({ youtubeId, mediaUrl, mediaKind }, re
         media.current.play();
       }
     },
+    pause() {
+      if (yt.current?.pauseVideo) yt.current.pauseVideo();
+      else media.current?.pause();
+    },
+    resume() {
+      if (yt.current?.playVideo) yt.current.playVideo();
+      else media.current?.play();
+    },
     currentTime() {
       if (yt.current?.getCurrentTime) return yt.current.getCurrentTime();
       return media.current?.currentTime || 0;
@@ -72,9 +81,11 @@ const Player = forwardRef(function Player({ youtubeId, mediaUrl, mediaKind }, re
     return (
       <div className="player">
         {isVideo ? (
-          <video ref={media} src={mediaUrl} controls playsInline />
+          <video ref={media} src={mediaUrl} controls playsInline
+            onPlay={() => onPlayingChange?.(true)} onPause={() => onPlayingChange?.(false)} />
         ) : (
-          <audio ref={media} src={mediaUrl} controls />
+          <audio ref={media} src={mediaUrl} controls
+            onPlay={() => onPlayingChange?.(true)} onPause={() => onPlayingChange?.(false)} />
         )}
       </div>
     );
