@@ -12,11 +12,11 @@ import traceback
 from rapidfuzz import fuzz
 from sqlmodel import Session, delete, select
 
-from . import quran
+from . import hadith, quran
 from .ai import get_provider
 from .ai.timeparse import fmt
 from .arabic import normalize
-from .config import CARD_EVIDENCE_THRESHOLD
+from .config import CARD_EVIDENCE_THRESHOLD, HADITH_MAX_PER_LESSON
 from .db import Book, Card, Lesson, Segment, engine
 
 VALID_KINDS = {"matn", "sharh", "quran", "hadith", "audience", "other"}
@@ -54,8 +54,10 @@ def process_lesson(lesson_id: int, provider=None) -> None:
         try:
             _set(session, lesson, status="processing", error="", progress="بدء المعالجة")
 
-            # 1) Transcribe (AI)
-            raw = provider.transcribe(lesson, on_progress=lambda m: _set(session, lesson, progress=m))
+            # 1) Transcribe (AI): two readings per window, disagreements re-listened (see ai/consensus.py)
+            book = session.get(Book, lesson.book_id)
+            raw = provider.transcribe(lesson, on_progress=lambda m: _set(session, lesson, progress=m),
+                                      context={"book": book.title if book else ""})
             if not raw:
                 raise RuntimeError("لم يُستخرج أي كلام من التسجيل")
 
@@ -65,25 +67,92 @@ def process_lesson(lesson_id: int, provider=None) -> None:
             session.exec(delete(Card).where(Card.lesson_id == lesson.id))
             segments = build_segments(lesson.id, raw)
             session.add_all(segments)
+            stats = dict(getattr(provider, "last_stats", {}) or {})
+            stats["uncertain"] = sum(len(json.loads(x.uncertain_json or "[]")) for x in segments)
+            lesson.quality_json = json.dumps(stats, ensure_ascii=False)
             if segments:
                 lesson.duration_sec = max(lesson.duration_sec or 0, segments[-1].end or segments[-1].start)
             session.commit()
 
-            text = transcript_for_llm(segments)
+            _finish(session, lesson, provider, segments)
+        except Exception as e:
+            if type(e).__name__ in ("QuotaError", "BusyError"):   # expected conditions: the message says it all
+                print("stopped:", e)
+            else:
+                traceback.print_exc()
+            _set(session, lesson, status="error", error=str(e)[:500], progress="")
 
-            # 3) Summary (AI, labelled ملخص آلي in the UI)
-            _set(session, lesson, progress="إعداد الملخص")
-            summary = provider.summarize(text)
-            lesson.summary_json = json.dumps(summary, ensure_ascii=False)
 
-            # 4) Review cards, each checked against the sheikh's words
-            _set(session, lesson, progress="استخراج بطاقات المراجعة")
-            accepted, rejected = check_cards(lesson.id, provider.cards(text), segments)
-            session.add_all(accepted)
-            _set(session, lesson, cards_rejected=rejected, status="ready", progress="")
+def _finish(session: Session, lesson: Lesson, provider, segments: list[Segment]) -> None:
+    """Everything after the transcript: full hadith, summary, review cards.
+
+    Each step is on its own: if one fails (busy servers, quota), the transcript and the other steps are kept, the lesson
+    opens normally, and the failed step is recorded so the student can retry it with one button.
+    """
+    quality = json.loads(lesson.quality_json or "{}")
+    for key in ("summary_failed", "cards_failed"):
+        quality.pop(key, None)
+
+    # 3) The full hadith for each hadith the sheikh quoted (nine hadith books)
+    try:
+        lookup_hadith(session, lesson, segments, provider)
+    except Exception:
+        traceback.print_exc()
+
+    text = transcript_for_llm(segments)
+
+    # 4) Summary (AI, labelled ملخص آلي in the UI)
+    _set(session, lesson, progress="إعداد الملخص")
+    try:
+        lesson.summary_json = json.dumps(provider.summarize(text), ensure_ascii=False)
+    except Exception as e:
+        traceback.print_exc()
+        quality["summary_failed"] = str(e)[:200]
+
+    # 5) Review cards, each checked against the sheikh's words
+    _set(session, lesson, progress="استخراج بطاقات المراجعة")
+    try:
+        session.exec(delete(Card).where(Card.lesson_id == lesson.id))
+        accepted, rejected = check_cards(lesson.id, provider.cards(text), segments)
+        session.add_all(accepted)
+        lesson.cards_rejected = rejected
+    except Exception as e:
+        traceback.print_exc()
+        quality["cards_failed"] = str(e)[:200]
+
+    lesson.quality_json = json.dumps(quality, ensure_ascii=False)
+    _set(session, lesson, status="ready", progress="")
+
+
+def lookup_hadith(session: Session, lesson: Lesson, segments: list[Segment], provider) -> None:
+    """Find the full hadith for the quotes that have no result yet, and keep the confirmed ones."""
+    todo = [s for s in segments if s.kind == "hadith" and not s.hadith_json][:HADITH_MAX_PER_LESSON]
+    if not todo:
+        return
+    _set(session, lesson, progress="البحث عن الأحاديث في كتب الحديث")
+    results = hadith.takhrij_many([(str(s.id), s.hadith_query or s.text) for s in todo], provider)
+    for s in todo:
+        r = results.get(str(s.id))
+        if r and r["results"] and r["method"] != "candidate":     # unconfirmed candidates are not kept: a later click retries
+            s.hadith_json = json.dumps(r, ensure_ascii=False)
+            session.add(s)
+    session.commit()
+
+
+def retry_extras(lesson_id: int, provider=None) -> None:
+    """Run the steps after the transcript again (summary, cards, hadith) without touching the transcript."""
+    provider = provider or get_provider()
+    with Session(engine) as session:
+        lesson = session.get(Lesson, lesson_id)
+        if not lesson:
+            return
+        try:
+            _set(session, lesson, status="processing", error="", progress="إعادة المحاولة")
+            segments = session.exec(select(Segment).where(Segment.lesson_id == lesson.id).order_by(Segment.idx)).all()
+            _finish(session, lesson, provider, segments)
         except Exception as e:
             traceback.print_exc()
-            _set(session, lesson, status="error", error=str(e)[:500], progress="")
+            _set(session, lesson, status="ready", progress="")     # the transcript is still there
 
 
 def build_segments(lesson_id: int, raw: list[dict]) -> list[Segment]:
@@ -97,8 +166,11 @@ def build_segments(lesson_id: int, raw: list[dict]) -> list[Segment]:
         if not text:
             continue
         seg = Segment(lesson_id=lesson_id, idx=len(out), start=float(r.get("start") or 0),
-                      end=float(r.get("end") or 0), kind=kind, text=text)
+                      end=float(r.get("end") or 0), kind=kind, text=text,
+                      low_confidence=bool(r.get("low_confidence")),
+                      uncertain_json=json.dumps(_valid_marks(r.get("uncertain"), text), ensure_ascii=False))
         if kind == "audience":
+            seg.uncertain_json = "[]"
             seg.text = AUDIENCE_PLACEHOLDER          # never store what attendees said
             seg.source_label = "sheikh"
         elif kind == "quran":
@@ -107,6 +179,8 @@ def build_segments(lesson_id: int, raw: list[dict]) -> list[Segment]:
                 seg.quran_json = match.to_json()
                 # Verified -> we display the Mushaf text, not the transcription
                 seg.source_label = "verified" if match.verified else "sheikh"
+                if match.verified:
+                    seg.uncertain_json = "[]"         # the Mushaf text is shown, so the transcription's doubts don't matter
         elif kind == "hadith":
             seg.hadith_query = text
         if kind == "matn":
@@ -115,6 +189,54 @@ def build_segments(lesson_id: int, raw: list[dict]) -> list[Segment]:
             seg.matn_idx = last_matn                  # this explanation belongs to that matn line
         out.append(seg)
     return out
+
+
+def _valid_marks(marks, text: str) -> list[dict]:
+    """Keep only well-formed «غير مؤكد» marks whose offsets fit the text."""
+    good = []
+    for m in marks or []:
+        try:
+            a, b = int(m["start"]), int(m["end"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if 0 <= a <= b <= len(text):
+            good.append({"id": len(good) + 1, "start": a, "end": b, "time": float(m.get("time") or 0),
+                         "negation": bool(m.get("negation")),
+                         "options": [str(o) for o in (m.get("options") or [])][:4]})
+    return good
+
+
+def resolve_mark(seg: Segment, mark_id: int, new_text: str) -> Segment:
+    """The student settles an unsure spot: replace those words, shift the other marks, drop this mark."""
+    marks = json.loads(seg.uncertain_json or "[]")
+    mark = next((m for m in marks if m["id"] == mark_id), None)
+    if mark is None:
+        raise KeyError(mark_id)
+    text, a, b = seg.text, mark["start"], mark["end"]
+    new_text = (new_text or "").strip()
+    if a == b and new_text:                           # a word was possibly missing here
+        before = text[:a]
+        piece = (" " if before and not before.endswith(" ") else "") + new_text + \
+                (" " if text[a:a + 1] and not text[a:a + 1].isspace() else "")
+    elif not new_text:                                # the student says nothing was said here
+        piece = ""
+        if b < len(text) and text[b:b + 1] == " ":
+            b += 1
+    else:
+        piece = new_text
+    seg.text = text[:a] + piece + text[b:]
+    delta = len(piece) - (b - a)
+    rest = []
+    for m in marks:
+        if m["id"] == mark_id:
+            continue
+        if m["start"] >= b:
+            m["start"] += delta
+            m["end"] += delta
+        rest.append(m)
+    seg.uncertain_json = json.dumps(rest, ensure_ascii=False)
+    seg.corrected = True
+    return seg
 
 
 def check_cards(lesson_id: int, proposed: list[dict], segments: list[Segment]) -> tuple[list[Card], int]:

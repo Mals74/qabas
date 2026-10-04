@@ -1,0 +1,1118 @@
+[
+ {
+  "id": "real-01",
+  "type": "real",
+  "query": "الصلوات الخمس، والجمعة إلى الجمعة، ورمضان إلى رمضان، كفارات لما بينهن ما لم تغش الكبائر",
+  "gold": [
+   "muslim:233"
+  ],
+  "note": ""
+ },
+ {
+  "id": "real-02",
+  "type": "real",
+  "query": "مثل الصلوات الخمس كمثل نهر غمر على باب أحدكم، يغتسل منه كل يوم خمس مرات، فهل ذلك يبقي من درنه شيئا",
+  "gold": [
+   "bukhari:528",
+   "muslim:667",
+   "muslim:668"
+  ],
+  "note": ""
+ },
+ {
+  "id": "real-03",
+  "type": "real",
+  "query": "لن يدخل الجنة أحد بعمله، قالوا: ولا أنت يا رسول الله؟ قال: ولا أنا، إلا أن يتغمدني الله برحمته وفضل",
+  "gold": [
+   "bukhari:5673",
+   "bukhari:6463",
+   "bukhari:6467",
+   "muslim:2816",
+   "muslim:2818",
+   "muslim:7111",
+   "muslim:7112"
+  ],
+  "note": ""
+ },
+ {
+  "id": "real-04",
+  "type": "real",
+  "query": "أمرت أن أقاتل الناس حتى يشهدوا أن لا إله إلا الله، وأني رسول الله، ويقيموا الصلاة، ويؤتوا الزكاة",
+  "gold": [
+   "bukhari:1399",
+   "bukhari:1400",
+   "bukhari:25",
+   "bukhari:2946",
+   "bukhari:392",
+   "bukhari:6924",
+   "bukhari:6925",
+   "bukhari:7284",
+   "bukhari:7285",
+   "muslim:20",
+   "muslim:21",
+   "muslim:22"
+  ],
+  "note": ""
+ },
+ {
+  "id": "real-05",
+  "type": "real",
+  "query": "إني لم أومر أن أثقب عن قلوب الناس، ولا أشق بطونهم",
+  "gold": [
+   "bukhari:4351",
+   "muslim:1064"
+  ],
+  "note": "transcription error: أثقب for أنقب"
+ },
+ {
+  "id": "real-06",
+  "type": "real",
+  "query": "يا رسول الله، ألا أضرب عنقه؟ فقال: لا، لعله أن يكون يصلي",
+  "gold": [
+   "bukhari:4351",
+   "muslim:1064"
+  ],
+  "note": ""
+ },
+ {
+  "id": "real-07",
+  "type": "real",
+  "query": "رأيت رسول الله صلى الله عليه وسلم وحانت صلاة العصر، فالتمس الناس الوضوء فلم يجدوه، فأتي رسول الله بوضوء فوضع يده في ذلك الإناء",
+  "gold": [
+   "bukhari:169",
+   "bukhari:3573",
+   "muslim:2279"
+  ],
+  "note": ""
+ },
+ {
+  "id": "real-08",
+  "type": "real",
+  "query": "والله لو منعوني عقالا كانوا يؤدونه إلى النبي صلى الله عليه وسلم لقاتلتهم على منعه",
+  "gold": [
+   "bukhari:1399",
+   "bukhari:1400",
+   "bukhari:1456",
+   "bukhari:1457",
+   "bukhari:6924",
+   "bukhari:6925",
+   "bukhari:7284",
+   "bukhari:7285",
+   "muslim:20"
+  ],
+  "note": ""
+ },
+ {
+  "id": "real-09",
+  "type": "real",
+  "query": "حق الله على العباد أن يعبدوه ولا يشركوا به شيئا",
+  "gold": [
+   "bukhari:2856",
+   "bukhari:6267",
+   "bukhari:7373",
+   "muslim:30"
+  ],
+  "note": "from the Qabas sample lesson"
+ },
+ {
+  "id": "paraphrase-01",
+  "type": "paraphrase",
+  "query": "قبول العمل وردّه بحسب قصد صاحبه في قلبه، فمن هاجر يريد دنيا أو امرأة فهجرته لما قصده",
+  "gold": [
+   "bukhari:1"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-02",
+  "type": "paraphrase",
+  "query": "الإسلام قائم على خمسة أركان: الشهادتان ثم الصلاة والزكاة والحج والصيام",
+  "gold": [
+   "bukhari:4513",
+   "bukhari:4514",
+   "bukhari:4515",
+   "bukhari:8",
+   "muslim:16"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-03",
+  "type": "paraphrase",
+  "query": "لا يكتمل إيمان المسلم حتى يتمنى لأخيه من الخير مثل ما يتمناه لنفسه",
+  "gold": [
+   "bukhari:13",
+   "muslim:45"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-04",
+  "type": "paraphrase",
+  "query": "المؤمن بالله واليوم الآخر إما أن يتكلم بكلام طيب وإما أن يسكت",
+  "gold": [
+   "bukhari:6018",
+   "bukhari:6019",
+   "bukhari:6135",
+   "bukhari:6136",
+   "bukhari:6138",
+   "bukhari:6475",
+   "muslim:47",
+   "muslim:48"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-05",
+  "type": "paraphrase",
+  "query": "الدين كله قائم على النصح لله ولكتابه ولرسوله ولأئمة المسلمين وعامتهم",
+  "gold": [
+   "muslim:55"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-06",
+  "type": "paraphrase",
+  "query": "من شاهد منكرا فعليه أن يزيله بيده، فإن عجز فبكلامه، فإن عجز فبقلبه، وهذا أقل الإيمان",
+  "gold": [
+   "muslim:49"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-07",
+  "type": "paraphrase",
+  "query": "سبعة أصناف من الناس يكونون تحت ظل الله يوم القيامة، منهم الحاكم العادل والشاب الذي نشأ على طاعة ربه",
+  "gold": [
+   "bukhari:1423",
+   "bukhari:6479",
+   "bukhari:660",
+   "bukhari:6806",
+   "muslim:1031"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-08",
+  "type": "paraphrase",
+  "query": "الحلال واضح والحرام واضح، وبينهما أمور ملتبسة لا يعرفها كثير من الناس، فمن ابتعد عنها حفظ دينه وعرضه",
+  "gold": [
+   "bukhari:2051",
+   "bukhari:52",
+   "muslim:1599"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-09",
+  "type": "paraphrase",
+  "query": "علامات المنافق ثلاث: يكذب إذا تكلم، ويخلف إذا وعد، ويخون إذا اؤتمن",
+  "gold": [
+   "bukhari:2682",
+   "bukhari:2749",
+   "bukhari:33",
+   "bukhari:6095",
+   "muslim:59"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-10",
+  "type": "paraphrase",
+  "query": "المسلم الحق هو الذي لا يؤذي المسلمين بكلامه ولا بفعله",
+  "gold": [
+   "bukhari:10",
+   "bukhari:11",
+   "bukhari:6484",
+   "muslim:40",
+   "muslim:41",
+   "muslim:42"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-11",
+  "type": "paraphrase",
+  "query": "الله لا يلتفت إلى أشكال الناس وثرواتهم، وإنما يلتفت إلى ما في قلوبهم وإلى أعمالهم",
+  "gold": [
+   "muslim:2564"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-12",
+  "type": "paraphrase",
+  "query": "الطهارة نصف الإيمان، وقول الحمد لله يملأ الميزان",
+  "gold": [
+   "muslim:223"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-13",
+  "type": "paraphrase",
+  "query": "ذكر قصير سهل على اللسان لكنه ثقيل في ميزان العبد، وهو التسبيح مع الحمد والتسبيح بالعظمة",
+  "gold": [
+   "bukhari:6406",
+   "bukhari:6682",
+   "muslim:2694"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-14",
+  "type": "paraphrase",
+  "query": "من صام شهر رمضان مصدقا وطالبا للأجر من الله غفرت له ذنوبه السابقة",
+  "gold": [
+   "bukhari:1901",
+   "bukhari:2014",
+   "bukhari:38",
+   "muslim:760"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-15",
+  "type": "paraphrase",
+  "query": "جاء رجل يطلب وصية، فكرر عليه النبي الوصية بترك الغضب",
+  "gold": [
+   "bukhari:6116"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-16",
+  "type": "paraphrase",
+  "query": "إذا مات الإنسان توقف عمله إلا من ثلاثة: صدقة مستمرة، وعلم ينتفع به الناس، وولد صالح يدعو له",
+  "gold": [
+   "muslim:1631"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-17",
+  "type": "paraphrase",
+  "query": "البر هو حسن الأخلاق، والإثم ما تردد في نفسك وكرهت أن يطلع عليه الناس",
+  "gold": [
+   "muslim:2553"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-18",
+  "type": "paraphrase",
+  "query": "القوي ليس الذي يغلب الرجال في المصارعة، بل الذي يضبط نفسه حين يغضب",
+  "gold": [
+   "bukhari:6114",
+   "muslim:2609"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-19",
+  "type": "paraphrase",
+  "query": "أفضل المسلمين من يتعلم كتاب الله ثم يعلمه لغيره",
+  "gold": [
+   "bukhari:5027"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-20",
+  "type": "paraphrase",
+  "query": "من خرج يبحث عن العلم يسّر الله له طريقا إلى الجنة",
+  "gold": [
+   "muslim:2699"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-21",
+  "type": "paraphrase",
+  "query": "ثلاثة رجال أغلقت صخرة عليهم باب الغار، فدعوا الله بأصلح أعمالهم: بر الوالدين، والعفة، والأمانة في أجر الأجير",
+  "gold": [
+   "bukhari:2272"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-22",
+  "type": "paraphrase",
+  "query": "يرغب الرجل في المرأة لمالها أو نسبها أو جمالها أو دينها، فليختر صاحبة الدين",
+  "gold": [
+   "bukhari:5090",
+   "muslim:1466"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-23",
+  "type": "paraphrase",
+  "query": "المؤمنون يقوي بعضهم بعضا كأجزاء البناء الواحد",
+  "gold": [
+   "bukhari:2446",
+   "bukhari:481",
+   "bukhari:6026",
+   "bukhari:6027",
+   "muslim:2585"
+  ],
+  "note": ""
+ },
+ {
+  "id": "paraphrase-24",
+  "type": "paraphrase",
+  "query": "مر النبي على كومة طعام فأدخل يده فيها فوجد بللا، فبين أن من يغش ليس على طريقته",
+  "gold": [
+   "muslim:101",
+   "muslim:102"
+  ],
+  "note": ""
+ },
+ {
+  "id": "name-01",
+  "type": "name",
+  "query": "حديث جبريل عليه السلام في الإسلام والإيمان والإحسان",
+  "gold": [
+   "bukhari:4777",
+   "bukhari:50",
+   "muslim:8"
+  ],
+  "note": ""
+ },
+ {
+  "id": "name-02",
+  "type": "name",
+  "query": "حديث النية",
+  "gold": [
+   "bukhari:1"
+  ],
+  "note": ""
+ },
+ {
+  "id": "name-03",
+  "type": "name",
+  "query": "حديث معاذ حين كان رديف النبي على الحمار",
+  "gold": [
+   "bukhari:2856",
+   "bukhari:6267",
+   "bukhari:7373",
+   "muslim:30"
+  ],
+  "note": ""
+ },
+ {
+  "id": "name-04",
+  "type": "name",
+  "query": "حديث الإفك",
+  "gold": [
+   "bukhari:2637",
+   "bukhari:2661",
+   "bukhari:4141",
+   "bukhari:4690",
+   "bukhari:4750",
+   "bukhari:6662",
+   "bukhari:6679",
+   "bukhari:7369",
+   "bukhari:7500",
+   "muslim:2770"
+  ],
+  "note": ""
+ },
+ {
+  "id": "name-05",
+  "type": "name",
+  "query": "حديث كعب بن مالك في تخلفه عن غزوة تبوك",
+  "gold": [
+   "bukhari:3951",
+   "bukhari:4418",
+   "bukhari:7225",
+   "muslim:7017",
+   "muslim:7018"
+  ],
+  "note": ""
+ },
+ {
+  "id": "name-06",
+  "type": "name",
+  "query": "حديث بدء الوحي في غار حراء",
+  "gold": [
+   "bukhari:3",
+   "bukhari:4953",
+   "bukhari:6982",
+   "muslim:160"
+  ],
+  "note": ""
+ },
+ {
+  "id": "name-07",
+  "type": "name",
+  "query": "حديث الشفاعة العظمى حين يأتي الناس آدم ثم نوحا",
+  "gold": [
+   "bukhari:3361",
+   "bukhari:4712",
+   "bukhari:7510",
+   "muslim:194"
+  ],
+  "note": ""
+ },
+ {
+  "id": "name-08",
+  "type": "name",
+  "query": "حديث الأعرابي الذي بال في المسجد",
+  "gold": [
+   "bukhari:220",
+   "bukhari:6025",
+   "bukhari:6128",
+   "muslim:284"
+  ],
+  "note": ""
+ },
+ {
+  "id": "name-09",
+  "type": "name",
+  "query": "حديث المسيء صلاته",
+  "gold": [
+   "bukhari:6251",
+   "bukhari:6667",
+   "bukhari:757",
+   "bukhari:793",
+   "muslim:397"
+  ],
+  "note": ""
+ },
+ {
+  "id": "name-10",
+  "type": "name",
+  "query": "حديث ضمام بن ثعلبة",
+  "gold": [
+   "bukhari:63",
+   "muslim:7512"
+  ],
+  "note": ""
+ },
+ {
+  "id": "name-11",
+  "type": "name",
+  "query": "حديث الرجل الذي قتل تسعة وتسعين نفسا",
+  "gold": [
+   "muslim:2766"
+  ],
+  "note": ""
+ },
+ {
+  "id": "name-12",
+  "type": "name",
+  "query": "حديث الرجل الذي سقى الكلب فغفر الله له",
+  "gold": [
+   "bukhari:2363",
+   "bukhari:2466",
+   "bukhari:3321",
+   "bukhari:6009",
+   "muslim:2244"
+  ],
+  "note": ""
+ },
+ {
+  "id": "not_in_corpus-01",
+  "type": "not_in_corpus",
+  "query": "أول ما يحاسب عليه العبد من عمله صلاته، فإن صلحت فقد أفلح وأنجح",
+  "gold": [],
+  "note": ""
+ },
+ {
+  "id": "not_in_corpus-02",
+  "type": "not_in_corpus",
+  "query": "هو الطهور ماؤه الحل ميتته",
+  "gold": [],
+  "note": ""
+ },
+ {
+  "id": "not_in_corpus-03",
+  "type": "not_in_corpus",
+  "query": "نهيت عن قتل المصلين",
+  "gold": [],
+  "note": ""
+ },
+ {
+  "id": "not_in_corpus-04",
+  "type": "not_in_corpus",
+  "query": "من حسن إسلام المرء تركه ما لا يعنيه",
+  "gold": [],
+  "note": ""
+ },
+ {
+  "id": "not_in_corpus-05",
+  "type": "not_in_corpus",
+  "query": "فدعا بسجل من ماء زمزم فشرب منه وتوضأ",
+  "gold": [],
+  "note": ""
+ },
+ {
+  "id": "not_in_corpus-06",
+  "type": "not_in_corpus",
+  "query": "حديث البطاقة",
+  "gold": [],
+  "note": ""
+ },
+ {
+  "id": "partial-01",
+  "type": "partial",
+  "query": "او ما تبكيه ما زالت الملايكه تظله",
+  "gold": [
+   "bukhari:4079",
+   "bukhari:4080"
+  ],
+  "note": "from bukhari:4080"
+ },
+ {
+  "id": "partial-02",
+  "type": "partial",
+  "query": "كان شيا يسيرا يا رسول الله قال",
+  "gold": [
+   "muslim:137"
+  ],
+  "note": "from muslim:353"
+ },
+ {
+  "id": "partial-03",
+  "type": "partial",
+  "query": "تحت عبد الرحمن بن عوف شكت الي",
+  "gold": [
+   "muslim:334"
+  ],
+  "note": "from muslim:760"
+ },
+ {
+  "id": "partial-04",
+  "type": "partial",
+  "query": "فرفعت وعسي ان يكون خيرا لكم التمسوها",
+  "gold": [
+   "bukhari:49"
+  ],
+  "note": "from bukhari:49"
+ },
+ {
+  "id": "partial-05",
+  "type": "partial",
+  "query": "ولا يخرج في الصدقه هرمه ولا ذات",
+  "gold": [
+   "bukhari:1455"
+  ],
+  "note": "from bukhari:1455"
+ },
+ {
+  "id": "partial-06",
+  "type": "partial",
+  "query": "اجد منك قال سقتني حفصه شربه عسل",
+  "gold": [
+   "bukhari:5268"
+  ],
+  "note": "from bukhari:5268"
+ },
+ {
+  "id": "partial-07",
+  "type": "partial",
+  "query": "لا تبادروا الامام اذا كبر فكبروا واذا",
+  "gold": [
+   "muslim:415"
+  ],
+  "note": "from muslim:932"
+ },
+ {
+  "id": "partial-08",
+  "type": "partial",
+  "query": "الليث وابن نمير قول ابي سلمه الي",
+  "gold": [
+   "muslim:2261"
+  ],
+  "note": "from muslim:5901"
+ },
+ {
+  "id": "partial-09",
+  "type": "partial",
+  "query": "وسعد جالسين يتحدثان فقالا قال رسول الله",
+  "gold": [
+   "muslim:2218"
+  ],
+  "note": "from muslim:5782"
+ },
+ {
+  "id": "partial-10",
+  "type": "partial",
+  "query": "المووده يقول للرجل اذا اراد ان يقتل",
+  "gold": [
+   "bukhari:3828"
+  ],
+  "note": "from bukhari:3828"
+ },
+ {
+  "id": "partial-11",
+  "type": "partial",
+  "query": "ان مقسما مولي عبد الله بن الحارث",
+  "gold": [
+   "bukhari:4595"
+  ],
+  "note": "from bukhari:4595"
+ },
+ {
+  "id": "partial-12",
+  "type": "partial",
+  "query": "الجنه لا موت ويا اهل النار لا",
+  "gold": [
+   "muslim:2850"
+  ],
+  "note": "from muslim:7183"
+ },
+ {
+  "id": "partial-13",
+  "type": "partial",
+  "query": "الاسلام اذا فقهوا والارواح جنود مجنده فما",
+  "gold": [
+   "muslim:2638"
+  ],
+  "note": "from muslim:6709"
+ },
+ {
+  "id": "partial-14",
+  "type": "partial",
+  "query": "علي بعير كلما اتي علي الركن اشار",
+  "gold": [
+   "bukhari:1612",
+   "bukhari:1632"
+  ],
+  "note": "from bukhari:1612"
+ },
+ {
+  "id": "partial-15",
+  "type": "partial",
+  "query": "افعل ذلك قال فانك اذا فعلت ذلك",
+  "gold": [
+   "bukhari:1153",
+   "muslim:1159"
+  ],
+  "note": "from muslim:2738"
+ },
+ {
+  "id": "partial-16",
+  "type": "partial",
+  "query": "مسيول عنه الا فكلكم راع وكلكم مسيول",
+  "gold": [
+   "bukhari:2554",
+   "bukhari:7138",
+   "muslim:1829"
+  ],
+  "note": "from bukhari:2554"
+ },
+ {
+  "id": "partial-17",
+  "type": "partial",
+  "query": "اسقه عسلا ثم اتي الثانيه فقال اسقه",
+  "gold": [
+   "bukhari:5684"
+  ],
+  "note": "from bukhari:5684"
+ },
+ {
+  "id": "partial-18",
+  "type": "partial",
+  "query": "من جهينه او جهينه خير من بني",
+  "gold": [
+   "muslim:2521"
+  ],
+  "note": "from muslim:6441"
+ },
+ {
+  "id": "partial-19",
+  "type": "partial",
+  "query": "نفسي فاغفر لها وان ارسلتها فاحفظها بما",
+  "gold": [
+   "bukhari:7393",
+   "muslim:2714"
+  ],
+  "note": "from bukhari:7393"
+ },
+ {
+  "id": "partial-20",
+  "type": "partial",
+  "query": "يرملوا ثلاثا ويمشوا اربعا قال قلت له",
+  "gold": [
+   "muslim:1264"
+  ],
+  "note": "from muslim:3055"
+ },
+ {
+  "id": "partial-21",
+  "type": "partial",
+  "query": "وسلم واعطي الذي حجمه ولو كان حراما",
+  "gold": [
+   "bukhari:2103"
+  ],
+  "note": "from bukhari:2103"
+ },
+ {
+  "id": "partial-22",
+  "type": "partial",
+  "query": "الذي يسالني فاعطيه من ذا الذي يستغفرني",
+  "gold": [
+   "muslim:758"
+  ],
+  "note": "from muslim:1773"
+ },
+ {
+  "id": "partial-23",
+  "type": "partial",
+  "query": "بن الخطاب رضي الله عنه دعني يا",
+  "gold": [
+   "bukhari:4907",
+   "muslim:1063"
+  ],
+  "note": "from muslim:2449"
+ },
+ {
+  "id": "partial-24",
+  "type": "partial",
+  "query": "هم بسيه فلم يعملها كتبها الله عنده",
+  "gold": [
+   "muslim:131"
+  ],
+  "note": "from muslim:338"
+ },
+ {
+  "id": "partial-25",
+  "type": "partial",
+  "query": "في ناس ونحن شببه متقاربون واقتصا جميعا",
+  "gold": [
+   "muslim:674"
+  ],
+  "note": "from muslim:1537"
+ },
+ {
+  "id": "partial-26",
+  "type": "partial",
+  "query": "مات قال افلا كنتم اذنتموني به دلوني",
+  "gold": [
+   "bukhari:458"
+  ],
+  "note": "from bukhari:458"
+ },
+ {
+  "id": "partial-27",
+  "type": "partial",
+  "query": "عجينا فبصق فيه وبارك ثم عمد الي",
+  "gold": [
+   "bukhari:4102"
+  ],
+  "note": "from bukhari:4102"
+ },
+ {
+  "id": "partial-28",
+  "type": "partial",
+  "query": "قال من اعمر ارضا ليست لاحد فهو",
+  "gold": [
+   "bukhari:2335"
+  ],
+  "note": "from bukhari:2335"
+ },
+ {
+  "id": "partial-29",
+  "type": "partial",
+  "query": "فبكيت ثم سارك فضحكت قالت سارني فاخبرني",
+  "gold": [
+   "muslim:2450"
+  ],
+  "note": "from muslim:6312"
+ },
+ {
+  "id": "partial-30",
+  "type": "partial",
+  "query": "رجلا بالبقيع يا ابا القاسم فالتفت اليه",
+  "gold": [
+   "muslim:2131"
+  ],
+  "note": "from muslim:5586"
+ },
+ {
+  "id": "partial_noisy-01",
+  "type": "partial_noisy",
+  "query": "من حسناته وهذا حساته فان فنيت",
+  "gold": [
+   "muslim:2581"
+  ],
+  "note": "from muslim:6579"
+ },
+ {
+  "id": "partial_noisy-02",
+  "type": "partial_noisy",
+  "query": "بعد ابي بكر وعثمان صدرا من",
+  "gold": [
+   "muslim:694"
+  ],
+  "note": "from muslim:1592"
+ },
+ {
+  "id": "partial_noisy-03",
+  "type": "partial_noisy",
+  "query": "بن عباس اسالك كيف رسول الله",
+  "gold": [
+   "muslim:1205"
+  ],
+  "note": "from muslim:2889"
+ },
+ {
+  "id": "partial_noisy-04",
+  "type": "partial_noisy",
+  "query": "احد قالت فاهللت بعمره ثم حتي",
+  "gold": [
+   "muslim:1211"
+  ],
+  "note": "from muslim:2935"
+ },
+ {
+  "id": "partial_noisy-05",
+  "type": "partial_noisy",
+  "query": "فمن عاد منكم الوم مريضا قال",
+  "gold": [
+   "muslim:1028"
+  ],
+  "note": "from muslim:6182"
+ },
+ {
+  "id": "partial_noisy-06",
+  "type": "partial_noisy",
+  "query": "لها الا ذلك واقم الصله قال",
+  "gold": [
+   "bukhari:597"
+  ],
+  "note": "from bukhari:597"
+ },
+ {
+  "id": "partial_noisy-07",
+  "type": "partial_noisy",
+  "query": "يمين كاذبه بها مال رجل مسم",
+  "gold": [
+   "bukhari:6659",
+   "bukhari:6660"
+  ],
+  "note": "from bukhari:6660"
+ },
+ {
+  "id": "partial_noisy-08",
+  "type": "partial_noisy",
+  "query": "قال وما ذاك قاوا صليت خمسا",
+  "gold": [
+   "bukhari:7249",
+   "muslim:572"
+  ],
+  "note": "from muslim:1281"
+ },
+ {
+  "id": "partial_noisy-09",
+  "type": "partial_noisy",
+  "query": "وفه زوجها بليال النبي صلي الله",
+  "gold": [
+   "bukhari:5320"
+  ],
+  "note": "from bukhari:5320"
+ },
+ {
+  "id": "partial_noisy-10",
+  "type": "partial_noisy",
+  "query": "الاواني قال لا فقال المتورد تري",
+  "gold": [
+   "muslim:2298"
+  ],
+  "note": "from muslim:5982"
+ },
+ {
+  "id": "partial_noisy-11",
+  "type": "partial_noisy",
+  "query": "ويخضه ويرفع اليه النهار بالليل وعمل",
+  "gold": [
+   "muslim:179"
+  ],
+  "note": "from muslim:447"
+ },
+ {
+  "id": "partial_noisy-12",
+  "type": "partial_noisy",
+  "query": "وسلم فافضنا يوم انحر فحاضت فاراد",
+  "gold": [
+   "bukhari:1733"
+  ],
+  "note": "from bukhari:1733"
+ },
+ {
+  "id": "partial_noisy-13",
+  "type": "partial_noisy",
+  "query": "جعل الامام ليوتم به فاذا ركع",
+  "gold": [
+   "bukhari:1113",
+   "bukhari:1236",
+   "bukhari:688",
+   "muslim:412"
+  ],
+  "note": "from muslim:926"
+ },
+ {
+  "id": "partial_noisy-14",
+  "type": "partial_noisy",
+  "query": "علي ركوعكم ولا سجودكم اني لاراكم",
+  "gold": [
+   "muslim:424"
+  ],
+  "note": "from muslim:958"
+ },
+ {
+  "id": "partial_noisy-15",
+  "type": "partial_noisy",
+  "query": "وسلم عها ولا تكلمت بها ولم",
+  "gold": [
+   "muslim:1646"
+  ],
+  "note": "from muslim:4255"
+ },
+ {
+  "id": "partial_noisy-16",
+  "type": "partial_noisy",
+  "query": "الصور يذبون القيامه يقال لهم احيوا",
+  "gold": [
+   "bukhari:5951",
+   "bukhari:5957",
+   "muslim:2108"
+  ],
+  "note": "from muslim:5535"
+ },
+ {
+  "id": "partial_noisy-17",
+  "type": "partial_noisy",
+  "query": "ابو ادريس الخولاني ان ثعبه الخشني",
+  "gold": [
+   "bukhari:5780",
+   "bukhari:5781"
+  ],
+  "note": "from bukhari:5780"
+ },
+ {
+  "id": "partial_noisy-18",
+  "type": "partial_noisy",
+  "query": "اشتد غضب الله علي دموا وجه",
+  "gold": [
+   "bukhari:4074"
+  ],
+  "note": "from bukhari:4074"
+ },
+ {
+  "id": "partial_noisy-19",
+  "type": "partial_noisy",
+  "query": "زهها قال وتصفر ارايتك ان منع",
+  "gold": [
+   "muslim:1555"
+  ],
+  "note": "from muslim:3977"
+ },
+ {
+  "id": "partial_noisy-20",
+  "type": "partial_noisy",
+  "query": "هذا ننصره فكيف ننصره ظاما قال",
+  "gold": [
+   "bukhari:2444"
+  ],
+  "note": "from bukhari:2444"
+ },
+ {
+  "id": "partial_noisy-21",
+  "type": "partial_noisy",
+  "query": "سفيان ايا علي امتي بالصلاه هذه",
+  "gold": [
+   "bukhari:7239"
+  ],
+  "note": "from bukhari:7239"
+ },
+ {
+  "id": "partial_noisy-22",
+  "type": "partial_noisy",
+  "query": "ان رجلين من اصاب صلي الله",
+  "gold": [
+   "bukhari:3639",
+   "bukhari:465"
+  ],
+  "note": "from bukhari:465"
+ },
+ {
+  "id": "partial_noisy-23",
+  "type": "partial_noisy",
+  "query": "النار لا هي وسقتها اذ حبستها",
+  "gold": [
+   "muslim:2242"
+  ],
+  "note": "from muslim:5852"
+ },
+ {
+  "id": "partial_noisy-24",
+  "type": "partial_noisy",
+  "query": "وما تزهي قال تحمر فال ارايت",
+  "gold": [
+   "bukhari:2198"
+  ],
+  "note": "from bukhari:2198"
+ },
+ {
+  "id": "partial_noisy-25",
+  "type": "partial_noisy",
+  "query": "في قالت فقلت يا رسول الله",
+  "gold": [
+   "bukhari:2788",
+   "bukhari:2789"
+  ],
+  "note": "from bukhari:2789"
+ },
+ {
+  "id": "partial_noisy-26",
+  "type": "partial_noisy",
+  "query": "ما يعل الحاج غير ان لا",
+  "gold": [
+   "bukhari:305",
+   "muslim:1211"
+  ],
+  "note": "from muslim:2919"
+ },
+ {
+  "id": "partial_noisy-27",
+  "type": "partial_noisy",
+  "query": "في وتر واني رايت اسجد في",
+  "gold": [
+   "bukhari:813"
+  ],
+  "note": "from bukhari:813"
+ },
+ {
+  "id": "partial_noisy-28",
+  "type": "partial_noisy",
+  "query": "فتختلف قلوبكم ليلني اولو الاحلام ولنهي",
+  "gold": [
+   "muslim:432"
+  ],
+  "note": "from muslim:972"
+ },
+ {
+  "id": "partial_noisy-29",
+  "type": "partial_noisy",
+  "query": "صل هذا الوادي المبارك وقل عمره",
+  "gold": [
+   "bukhari:1534",
+   "bukhari:2337",
+   "bukhari:7343"
+  ],
+  "note": "from bukhari:2337"
+ },
+ {
+  "id": "partial_noisy-30",
+  "type": "partial_noisy",
+  "query": "فعليه خلصه في ماله فان يكن",
+  "gold": [
+   "bukhari:2492"
+  ],
+  "note": "from bukhari:2492"
+ }
+]

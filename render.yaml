@@ -1,0 +1,16 @@
+# Render Blueprint: New → Blueprint → pick this repo. Then paste GEMINI_API_KEY when Render asks.
+services:
+  - type: web
+    name: qabas
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/status
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false            # secret: entered in the Render dashboard, never in the repo
+      - key: MAX_LESSONS_PER_DAY
+        value: "5"             # budget: new lessons per day on the public link
+      - key: MAX_LESSON_MINUTES
+        value: "10"
+      - key: SHOW_SAMPLE
+        value: "0"

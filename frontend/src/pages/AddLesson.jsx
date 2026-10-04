@@ -89,9 +89,22 @@ export default function AddLesson() {
           </label>
         )}
 
+        {status?.max_minutes > 0 && (
+          <p className="hint">في النسخة التجريبية يُفرَّغ أول {status.max_minutes} دقائق من كل تسجيل (لحماية الحصة المجانية للخدمة).</p>
+        )}
+        {status?.lessons_today?.limit > 0 && (
+          <p className={status.lessons_today.left === 0 ? "notice small" : "hint"}>
+            {status.lessons_today.left === 0
+              ? "بلغت النسخة التجريبية حدها اليومي من الدروس الجديدة (لأسباب تتعلق بالميزانية). تصفّح الدروس الجاهزة، أو جرّب غدًا بعد 10 صباحًا بتوقيت السعودية."
+              : `لأسباب تتعلق بالميزانية، عدد الدروس الجديدة في النسخة التجريبية محدود: بقي اليوم ${status.lessons_today.left} من ${status.lessons_today.limit}.`}
+          </p>
+        )}
+        {status?.quota?.exhausted && (
+          <p className="notice small">انتهت الحصة اليومية للنموذج الأساسي؛ سيُستخدم نموذج احتياطي أقل دقة حتى تتجدد الحصة (10 صباحًا بتوقيت السعودية).</p>
+        )}
         <p className="hint">أضف دروسًا يحق لك الوصول إليها. دفترك خاص بك، ولا يُفرَّغ كلام الحضور حفاظًا على خصوصيتهم.</p>
         {error && <p className="notice error">{error}</p>}
-        <button className="btn-primary wide" disabled={busy}>{busy ? "جارٍ الإضافة…" : "ابدأ المعالجة"}</button>
+        <button className="btn-primary wide" disabled={busy || status?.lessons_today?.left === 0}>{busy ? "جارٍ الإضافة…" : "ابدأ المعالجة"}</button>
       </form>
     </div>
   );

@@ -113,7 +113,7 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--display); font-weight: 600; }
 /* ---------- transcript segments ---------- */
 .seg { display: flex; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px; }
 .seg-side { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: none; order: 2; }
-.seg-body { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.seg-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .seg-body p { font-size: 16.5px; }
 .seg-matn { background: #f1ece2; border-color: #e3dac9; }
 .seg-matn .seg-body p { font-weight: 600; color: var(--green-dark); }
@@ -186,7 +186,31 @@ mark { background: #f3e2b8; border-radius: 4px; padding: 0 2px; }
 .principle { font-family: var(--display); font-size: 19px; color: var(--green-dark); }
 ul.plain { margin: 0; padding-inline-start: 18px; line-height: 2; color: var(--ink-2); }
 
+/* ---------- «غير مؤكد» (two-pass check) ---------- */
+.unsure { font: inherit; color: inherit; background: #f3e2b8; border: 0; border-bottom: 2px dashed var(--gold); border-radius: 4px; padding: 0 3px; margin: 0 1px; cursor: pointer; line-height: inherit; }
+.unsure.neg { background: #f6ded9; border-bottom-color: var(--danger); }
+.unsure.gap { min-width: 1.4em; font-weight: 700; color: var(--gold-text); }
+.unsure.neg.gap { color: var(--danger); }
+.unsure.active { outline: 2px solid var(--gold); }
+.review { min-width: 0; max-width: 100%; background: #fbf4e4; border: 1px solid #ecdcb6; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.review.neg { background: #fbecea; border-color: #efcfc9; }
+.review-head { display: flex; justify-content: space-between; align-items: center; }
+.review-title { font-family: var(--display); font-weight: 600; color: var(--gold-text); }
+.review.neg .review-title { color: var(--danger); }
+.options { display: flex; flex-wrap: wrap; gap: 8px; }
+.option { border: 1.5px solid var(--green); background: var(--surface); color: var(--green-dark); border-radius: 12px; padding: 8px 14px; font-weight: 600; }
+.option:disabled { opacity: .6; }
+.icon-btn.small { padding: 2px 8px; font-size: 14px; }
+.error-text { color: var(--danger); }
+.tag-fixed { background: #e3e8f3; color: #2f4a7a; }
+.quality { background: var(--green-soft); color: #1e4a40; border-radius: 14px; padding: 10px 14px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.quality p { line-height: 1.8; }
+
 /* ---------- bottom tab bar ---------- */
 .tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; display: flex; background: var(--bg); border-top: 1px solid var(--line); padding: 8px 8px calc(10px + env(safe-area-inset-bottom)); z-index: 10; }
 .tabbar a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; color: #56605c; font-size: 12.5px; }
 .tabbar a.active { color: var(--green-dark); font-weight: 700; }
+
+/* hadith text: long narrations are folded until the student asks for all of it */
+.hadith-text.folded { max-height: 9.5em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+.link-btn { align-self: flex-start; background: none; border: 0; color: var(--green-dark); font: inherit; font-size: 14px; padding: 2px 0; cursor: pointer; text-decoration: underline; }

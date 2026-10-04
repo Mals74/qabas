@@ -4,3 +4,9 @@ __pycache__/
 backend/data/qabas.db
 backend/data/uploads/
 .env
+seed_work.db
+backend/seed_work.db
+frontend/dist/
+*.db
+eval/runs/
+eval/clip01.zip

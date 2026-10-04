@@ -16,15 +16,16 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlmodel import Session, func, select
 
-from . import hadith, pipeline
+from . import hadith, pipeline, seed, youtube
 from .ai import get_provider
 from .ai.timeparse import fmt
-from .config import AI_PROVIDER, BASE_DIR, GEMINI_MODEL, UPLOAD_DIR
+from .ai import limits
+from .config import (AI_PROVIDER, BASE_DIR, GEMINI_MODEL, HEAVY_DAILY_LIMIT, LIGHT_MODEL, MAX_LESSON_MINUTES,
+                     SHOW_SAMPLE, UPLOAD_DIR)
 from .db import Book, Card, Lesson, Note, Segment, engine, get_session, init_db
 
 app = FastAPI(title="Qabas API")
 
-YOUTUBE_RE = re.compile(r"^(https?://)?(www\.|m\.)?(youtube\.com|youtu\.be)/", re.I)
 ALLOWED_UPLOADS = {".mp3", ".m4a", ".wav", ".ogg", ".aac", ".mp4", ".webm", ".mov"}
 KIND_LABELS = {"masalah": "المسائل", "mustalah": "المصطلحات", "dalil": "الأدلة"}
 
@@ -35,7 +36,9 @@ KIND_LABELS = {"masalah": "المسائل", "mustalah": "المصطلحات", "d
 def startup() -> None:
     init_db()
     with Session(engine) as s:
-        if s.exec(select(func.count()).select_from(Book)).one() == 0:
+        fresh = s.exec(select(func.count()).select_from(Book)).one() == 0
+        seed.import_seeds(s)                              # real lessons shipped in the repo (data/seed)
+        if fresh and SHOW_SAMPLE:                         # the labelled demo lesson (turn off with SHOW_SAMPLE=0)
             _seed_sample(s)
 
 
@@ -69,11 +72,16 @@ def lesson_card(les: Lesson, book: Optional[Book] = None) -> dict:
 
 def segment_out(seg: Segment) -> dict:
     d = {"id": seg.id, "idx": seg.idx, "start": seg.start, "time": fmt(seg.start), "kind": seg.kind,
-         "text": seg.text, "matn_idx": seg.matn_idx, "source_label": seg.source_label}
+         "text": seg.text, "matn_idx": seg.matn_idx, "source_label": seg.source_label,
+         "uncertain": json.loads(seg.uncertain_json or "[]"), "low_confidence": seg.low_confidence,
+         "corrected": seg.corrected}
     if seg.quran_json:
         q = json.loads(seg.quran_json)
         ayah = f"{q['ayah_from']}" if q["ayah_from"] == q["ayah_to"] else f"{q['ayah_from']}-{q['ayah_to']}"
         q["ref"] = f"[{q['surah_name']}: {ayah}]"
+        for part in q.get("parts") or []:
+            a = f"{part['ayah_from']}" if part["ayah_from"] == part["ayah_to"] else f"{part['ayah_from']}-{part['ayah_to']}"
+            part["ref"] = f"[{part['surah_name']}: {a}]"
         d["quran"] = q
     if seg.hadith_json:
         d["hadith"] = json.loads(seg.hadith_json)
@@ -91,7 +99,12 @@ def card_out(c: Card, les: Optional[Lesson] = None) -> dict:
 
 @app.get("/api/status")
 def status():
-    return {"provider": AI_PROVIDER, "model": GEMINI_MODEL if AI_PROVIDER == "gemini" else None}
+    live = AI_PROVIDER == "gemini"
+    return {"provider": AI_PROVIDER, "model": GEMINI_MODEL if live else None,
+            "light_model": LIGHT_MODEL if live else None,
+            "max_minutes": MAX_LESSON_MINUTES,              # 0 = no cap
+            "quota": limits.heavy.status() if live else None,
+            "lessons_today": limits.lessons.status() if live else None}
 
 
 # ---------------- books ----------------
@@ -166,6 +179,10 @@ def create_lesson(
     file: Optional[UploadFile] = File(None),
     s: Session = Depends(get_session),
 ):
+    # Budget: a daily cap on new lessons, checked before anything is saved
+    if AI_PROVIDER == "gemini" and not limits.lessons.available():
+        raise HTTPException(429, "بلغت النسخة التجريبية حدها اليومي من الدروس الجديدة (لأسباب تتعلق بالميزانية). "
+                                 "تصفّح الدروس الجاهزة، أو جرّب غدًا بعد الساعة 10 صباحًا بتوقيت السعودية.")
     # Book: existing or new
     if not book_id:
         if not new_book_title.strip():
@@ -183,9 +200,10 @@ def create_lesson(
 
     lesson = Lesson(book_id=book_id, title=title.strip(), sheikh=sheikh.strip(), date=date.strip(), number=number)
     if youtube_url.strip():
-        if not YOUTUBE_RE.match(youtube_url.strip()):
+        url = youtube.canonical(youtube_url)
+        if not url:
             raise HTTPException(400, "رابط يوتيوب غير صحيح")
-        lesson.source_type, lesson.source_url = "youtube", youtube_url.strip()
+        lesson.source_type, lesson.source_url = "youtube", url
     elif file is not None and file.filename:
         ext = Path(file.filename).suffix.lower()
         if ext not in ALLOWED_UPLOADS:
@@ -200,6 +218,8 @@ def create_lesson(
     s.add(lesson)
     s.commit()
     s.refresh(lesson)
+    if AI_PROVIDER == "gemini":
+        limits.lessons.record()
     _run_in_background(lesson.id)
     return lesson_card(lesson)
 
@@ -223,6 +243,7 @@ def get_lesson(lesson_id: int, s: Session = Depends(get_session)):
         "notes": [{"id": n.id, "start": n.start, "time": fmt(n.start), "text": n.text} for n in notes],
         "cards": [card_out(c) for c in cards],
         "cards_rejected": les.cards_rejected,
+        "quality": json.loads(les.quality_json or "{}"),
     }
 
 
@@ -232,6 +253,16 @@ def reprocess(lesson_id: int, s: Session = Depends(get_session)):
     if les.is_sample:
         raise HTTPException(400, "الدرس التجريبي لا يعاد تفريغه")
     _run_in_background(les.id)
+    return {"ok": True}
+
+
+@app.post("/api/lessons/{lesson_id}/retry-extras")
+def retry_extras(lesson_id: int, s: Session = Depends(get_session)):
+    """Run the summary, the review cards and the hadith lookups again; the transcript is untouched."""
+    les = s.get(Lesson, lesson_id) or _404("الدرس غير موجود")
+    if les.status == "processing":
+        raise HTTPException(409, "الدرس قيد المعالجة الآن")
+    threading.Thread(target=pipeline.retry_extras, args=(les.id,), daemon=True).start()
     return {"ok": True}
 
 
@@ -288,12 +319,32 @@ def takhrij(segment_id: int, s: Session = Depends(get_session)):
     seg = s.get(Segment, segment_id) or _404("المقطع غير موجود")
     if seg.hadith_json:
         return json.loads(seg.hadith_json)
-    result = hadith.takhrij(seg.hadith_query or seg.text)
-    if result["ok"]:                      # cache only real answers from Dorar
+    result = hadith.takhrij(seg.hadith_query or seg.text, get_provider())
+    if result["results"] and result.get("method") != "candidate":   # cache only confirmed answers
         seg.hadith_json = json.dumps(result, ensure_ascii=False)
         s.add(seg)
         s.commit()
     return result
+
+
+# ---------------- «غير مؤكد» marks ----------------
+
+class ResolveIn(BaseModel):
+    mark_id: int
+    text: str = ""
+
+
+@app.post("/api/segments/{segment_id}/resolve")
+def resolve(segment_id: int, body: ResolveIn, s: Session = Depends(get_session)):
+    seg = s.get(Segment, segment_id) or _404("المقطع غير موجود")
+    try:
+        pipeline.resolve_mark(seg, body.mark_id, body.text)
+    except KeyError:
+        _404("هذا الموضع غير موجود أو حُسم من قبل")
+    s.add(seg)
+    s.commit()
+    s.refresh(seg)
+    return segment_out(seg)
 
 
 # ---------------- search ----------------

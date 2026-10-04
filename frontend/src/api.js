@@ -27,10 +27,12 @@ export const api = {
   recent: () => request("/lessons/recent"),
   lesson: (id) => request(`/lessons/${id}`),
   createLesson: (formData) => request("/lessons", { method: "POST", body: formData }),
+  retryExtras: (id) => request(`/lessons/${id}/retry-extras`, { method: "POST" }),
   reprocess: (id) => request(`/lessons/${id}/reprocess`, { method: "POST" }),
   deleteLesson: (id) => request(`/lessons/${id}`, { method: "DELETE" }),
   addNote: (id, start, text) => request(`/lessons/${id}/notes`, json("POST", { start, text })),
   deleteNote: (id) => request(`/notes/${id}`, { method: "DELETE" }),
   takhrij: (segmentId) => request(`/segments/${segmentId}/takhrij`),
+  resolve: (segmentId, markId, text) => request(`/segments/${segmentId}/resolve`, json("POST", { mark_id: markId, text })),
   search: (q) => request(`/search?q=${encodeURIComponent(q)}`),
 };

@@ -41,6 +41,7 @@ class Lesson(SQLModel, table=True):
     progress: str = ""                   # human-readable step while processing
     cards_rejected: int = 0              # AI-proposed cards dropped for lack of evidence
     summary_json: str = "[]"             # AI summary points (labelled ملخص آلي)
+    quality_json: str = "{}"             # two-pass stats: disagreements, resolved by re-listening, still unsure
     is_sample: bool = False              # sample/demo data, shown with a badge
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -59,6 +60,9 @@ class Segment(SQLModel, table=True):
     quran_json: str = ""                 # verified verse (see quran.py) when kind == quran
     hadith_query: str = ""               # the fragment the sheikh said, used for takhrij
     hadith_json: str = ""                # cached Dorar result (only cached when the lookup succeeded)
+    uncertain_json: str = "[]"           # words the two readings disagreed on and re-listening couldn't settle
+    low_confidence: bool = False         # the readings of this part differed too much (poor audio)
+    corrected: bool = False              # the student fixed a word in this segment
 
 
 class Card(SQLModel, table=True):
@@ -82,9 +86,25 @@ class Note(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+# Columns added after the first release: added to existing databases at startup
+_NEW_COLUMNS = {
+    "lesson": {"quality_json": "VARCHAR DEFAULT '{}'"},
+    "segment": {"uncertain_json": "VARCHAR DEFAULT '[]'", "low_confidence": "BOOLEAN DEFAULT 0",
+                "corrected": "BOOLEAN DEFAULT 0"},
+}
+
+
 def init_db() -> None:
-    """Create tables if they don't exist yet."""
+    """Create tables if they don't exist yet, and add any newer columns to older databases."""
     SQLModel.metadata.create_all(engine)
+    from sqlalchemy import inspect, text
+    insp = inspect(engine)
+    with engine.begin() as conn:
+        for table, cols in _NEW_COLUMNS.items():
+            have = {c["name"] for c in insp.get_columns(table)}
+            for name, ddl in cols.items():
+                if name not in have:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
 
 
 def get_session():

@@ -3,7 +3,7 @@
 Run from the backend folder:  python -m pytest -q
 """
 from app.arabic import normalize
-from app.hadith import build_query, parse_dorar_html
+from app.hadith import build_query, search_link
 from app.pipeline import build_segments, check_cards
 from app.quran import verify
 
@@ -63,14 +63,8 @@ def test_audience_words_are_never_stored():
 
 # ---------- hadith ----------
 
-def test_dorar_parser():
-    html = ('<div class="hadith">1 - نص الحديث</div><div class="hadith-info">'
-            '<span class="info-subtitle">الراوي:</span> أبو هريرة '
-            '<span class="info-subtitle">المحدث:</span> <a>البخاري</a> '
-            '<span class="info-subtitle">خلاصة حكم المحدث:</span> <span>[صحيح]</span></div>')
-    h = parse_dorar_html(html)[0]
-    assert h["text"] == "نص الحديث" and h["narrator"] == "أبو هريرة"
-    assert h["muhaddith"] == "البخاري" and h["grade"] == "صحيح"
+def test_dorar_link_searches_the_sheikhs_words():
+    assert search_link("إنما الأعمال").startswith("https://dorar.net/hadith/search?q=")
 
 
 def test_dorar_query_keeps_spelling():

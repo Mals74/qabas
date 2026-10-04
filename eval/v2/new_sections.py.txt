@@ -1,0 +1,202 @@
+md("""
+## 8. Build glossaries
+
+- **Best case (C)**: Gemini lists the names, books and terms found in the official transcript of *this same clip*.
+  This is deliberately "cheating": it is the best context possible. The same list is used to score name/term accuracy.
+- **Realistic (D, Al-Khudair only)**: the list is built from the *previous lesson's* official transcript,
+  which is what the app would already have when a student adds a new lesson.
+""")
+code(r"""
+GLOSS_PROMPT = '''فيما يلي نص من درس علمي شرعي. استخرج منه أهم الأعلام (أسماء الأشخاص)، وأسماء الكتب، والأماكن،
+والمصطلحات العلمية الخاصة بهذا الفن، كما كُتبت في النص تمامًا. لا تذكر الكلمات العامة، ولا تكرر عنصرًا.
+أعد قائمة JSON بحد أقصى {n} عنصرًا، الأهم فالأهم.
+
+النص:
+{text}'''
+LIST_SCHEMA = {"type": "ARRAY", "items": {"type": "STRING"}}
+
+
+def glossary_from(text, n=40):
+    # ask Gemini for the names/books/terms in a text
+    out = json.loads(ask_text(GLOSS_PROMPT.format(n=n, text=text[:60000]), schema=LIST_SCHEMA))
+    return [t.strip() for t in out if t and t.strip()][:n]
+
+
+def previous_text(c):
+    # official transcript of the previous lesson (another clip's page, or a URL)
+    prev = c.get("prev")
+    if not prev:
+        return ""
+    if prev.startswith("http"):
+        f = OUT / c["id"] / "prev_reference.txt"
+        if not f.exists():
+            f.write_text(clean_reference(main_text(requests.get(prev, headers=HEADERS, timeout=60).text)), encoding="utf-8")
+        return f.read_text(encoding="utf-8")
+    f = OUT / prev / "reference_full.txt"
+    return f.read_text(encoding="utf-8") if f.exists() else ""
+
+
+for c in READY:
+    d = OUT / c["id"]
+    gf = d / "glossaries.json"
+    if gf.exists():
+        c["gloss"] = json.loads(gf.read_text(encoding="utf-8")); print(c["id"], "glossaries already built"); continue
+    ref_full = (d / "reference_full.txt").read_text(encoding="utf-8")
+    span = raw_span(ref_full, (d / "A.txt").read_text(encoding="utf-8"))    # transcript part that matches the clip
+    g = {"oracle": glossary_from(span)}
+    prev = previous_text(c)
+    g["previous"] = glossary_from(prev) if prev else []
+    gf.write_text(json.dumps(g, ensure_ascii=False, indent=1), encoding="utf-8")
+    c["gloss"] = g
+    print(f"━━ {c['id']}\n  best case ({len(g['oracle'])}): " + "، ".join(g["oracle"]))
+    if g["previous"]:
+        print(f"  from previous lesson ({len(g['previous'])}): " + "، ".join(g["previous"]))
+""")
+
+md("## 9. Transcribe with the glossaries (C for all clips, D for Al-Khudair)")
+code(r"""
+for c in READY:
+    d = OUT / c["id"]
+    jobs = [("C", c["gloss"]["oracle"])] + ([("D", c["gloss"]["previous"])] if c["gloss"]["previous"] else [])
+    for tag, gl in jobs:
+        f = d / f"{tag}.txt"
+        if f.exists():
+            print(c["id"], tag, "already done"); continue
+        print(f"▶ {c['id']} pass {tag} ({len(gl)} glossary items) …")
+        f.write_text(ask_gemini(d / "clip.mp3", prompt_for(c, True, gl)), encoding="utf-8")
+""")
+
+md("""
+## 10. Negation check (A vs B)
+
+Wherever A and B disagree about a negation word, Gemini listens again to ±45 seconds around that spot
+and says which version was actually said. A is then corrected → **A + check**.
+""")
+code(r"""
+WINDOW = 45
+CHECK_PROMPT = '''استمع إلى هذا الجزء من الدرس. اختلفت نسختان من التفريغ في الموضع التالي، والاختلاف يتعلق بأداة نفي قد تقلب المعنى:
+
+...{before} [النسخة A: {A}] [النسخة B: {B}] {after}...
+
+ابحث عن هذه الجملة في الصوت واستمع إليها بدقة، وانتبه لوجود أداة النفي أو غيابها.
+- إن طابقت النسخة A ما قيل فعلًا فأجب choice = "A"
+- إن طابقت النسخة B فأجب choice = "B"
+- إن لم تطابق أيّ منهما فأجب choice = "other" واكتب في heard الكلمات التي قيلت مكان الموضع المختلف فقط.'''
+SCHEMA = {"type": "OBJECT", "properties": {"choice": {"type": "STRING", "enum": ["A", "B", "other"]},
+                                           "heard": {"type": "STRING"}}, "required": ["choice", "heard"]}
+report = []
+for c in READY:
+    d = OUT / c["id"]
+    if (d / "A_checked.txt").exists():
+        print(c["id"], "already checked"); continue
+    A, B = (d / "A.txt").read_text(encoding="utf-8"), (d / "B.txt").read_text(encoding="utf-8")
+    spots = diff_spots(A, B)
+    print(f"━━ {c['id']}: {len(spots)} negation disagreement(s)")
+    verdicts = {}
+    for s in spots:
+        t = s["pos"] * c["seconds"]                           # estimated time of the spot
+        s0, s1 = max(0, int(t - WINDOW)), min(int(c["seconds"]), int(t + WINDOW))
+        win = d / f"spot{s['id']}.mp3"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", str(s0), "-t", str(s1 - s0),
+                        "-i", str(d / "clip.mp3"), str(win)], check=True)
+        try:
+            v = json.loads(ask_gemini(win, CHECK_PROMPT.format(**s), schema=SCHEMA))
+        except Exception as e:
+            v = {"choice": "unsure", "heard": str(e)[:80]}
+        verdicts[s["id"]] = v
+        line = (f"{c['id']} #{s['id']} [{s0//60}:{s0%60:02d}–{s1//60}:{s1%60:02d}] ...{s['before']} "
+                f"[A: {s['A']}] [B: {s['B']}] {s['after']}...\n   → {v['choice']}"
+                + (f" | heard: {v['heard']}" if v["choice"] == "other" else ""))
+        print(line); report.append(line)
+    (d / "A_checked.txt").write_text(apply_verdicts(A, spots, verdicts), encoding="utf-8")
+if report:
+    (OUT / "negation_check_report.txt").write_text("\n\n".join(report), encoding="utf-8")
+""")
+
+md("""
+## 11. Final results
+
+- **Terms**: share of the names/books/terms (best-case list) that each system wrote correctly. This is the number
+  context is supposed to move; WER barely shows it.
+- Rows: **A** plain · **B** book/sheikh/title · **C** + best-case glossary · **D** + glossary from the previous lesson · **A + check**.
+""")
+code(r"""
+import pandas as pd
+
+SYSTEMS = [("A", "A plain"), ("B", "B context"), ("C", "C best-case glossary"),
+           ("D", "D previous-lesson glossary"), ("A_checked", "A + check")]
+
+
+def score_row(c, name, hyp_text):
+    ref_full = (OUT / c["id"] / "reference_full.txt").read_text(encoding="utf-8")
+    r, h, info = auto_trim(ref_full, hyp_text)
+    s, t = wer_cer(r, h), term_scores(r, h, c["gloss"]["oracle"])
+    return {"Clip": c["id"], "System": name, "WER": s["WER"], "CER": s["CER"],
+            "Terms": t["terms_pct"], "Missed terms": "، ".join(t["missed_terms"]),
+            "Negation errors": len(diff_spots(r, h)),
+            "Words out": info.get("hyp_words", 0), "Ref words used": info.get("ref_used", 0),
+            "Matched": "yes" if info["ok"] else "NO"}
+
+
+rows = []
+for c in READY:
+    for tag, name in SYSTEMS:
+        f = OUT / c["id"] / f"{tag}.txt"
+        if f.exists():
+            rows.append(score_row(c, name, f.read_text(encoding="utf-8")))
+final = pd.DataFrame(rows)
+final.to_csv(OUT / "results.csv", index=False, encoding="utf-8-sig")
+
+
+def summarize(df):
+    w = df["Ref words used"]
+    return pd.Series({"Clips": len(df), "WER": (df.WER * w).sum() / w.sum(), "CER": (df.CER * w).sum() / w.sum(),
+                      "Terms": df.Terms.mean(), "Negation errors": df["Negation errors"].sum(), "Words": w.sum()})
+
+
+fmt = {"WER": "{:.1%}", "CER": "{:.1%}", "Terms": "{:.0%}"}
+summary = final.groupby("System", sort=False).apply(summarize)
+summary.to_csv(OUT / "summary.csv", encoding="utf-8-sig")
+print("All clips (D exists only for Al-Khudair, so compare it using the second table):")
+display(summary.style.format(fmt))
+k = final[final.Clip.str.startswith("K")]
+if len(k):
+    summary_k = k.groupby("System", sort=False).apply(summarize)
+    summary_k.to_csv(OUT / "summary_khudair.csv", encoding="utf-8-sig")
+    print("Al-Khudair clips only:")
+    display(summary_k.style.format(fmt))
+display(final.drop(columns="Missed terms").style.format(fmt))
+""")
+
+md("## 12. Error details and download")
+code(r"""
+from google.colab import files
+
+for c in READY:
+    d = OUT / c["id"]
+    ref_full = (d / "reference_full.txt").read_text(encoding="utf-8")
+    lines = [f"=== {c['id']} | {c.get('title', '')} ===",
+             "Best-case glossary: " + "، ".join(c["gloss"]["oracle"]),
+             "Previous-lesson glossary: " + ("، ".join(c["gloss"]["previous"]) or "-")]
+    for tag, _ in SYSTEMS:
+        f = d / f"{tag}.txt"
+        if not f.exists():
+            continue
+        r, h, _ = auto_trim(ref_full, f.read_text(encoding="utf-8"))
+        t = term_scores(r, h, c["gloss"]["oracle"])
+        lines.append(f"\n--- {tag}: missed terms: " + ("، ".join(t["missed_terms"]) or "none"))
+        lines.append(f"--- {tag}: negation differences vs official transcript ---")
+        lines += [f"  ...{s['before']} [ref: {s['A']}] [model: {s['B']}] {s['after']}..." for s in diff_spots(r, h)]
+        lines.append(f"--- {tag}: top word swaps (official → model) ---")
+        lines += [f"  {a} → {b}  ×{n}" for (a, b), n in top_substitutions(r, h, 12)]
+    (d / "errors.txt").write_text("\n".join(lines), encoding="utf-8")
+    print("\n".join(lines[:12]), "\n")
+
+import zipfile                                            # zip text results only (audio stays in Colab)
+with zipfile.ZipFile("qabas_eval_v2_results.zip", "w", zipfile.ZIP_DEFLATED) as z:
+    for p in OUT.rglob("*"):
+        if p.suffix in {".txt", ".csv", ".json"}:
+            z.write(p, p.relative_to(OUT))
+files.download("qabas_eval_v2_results.zip")
+""")
+

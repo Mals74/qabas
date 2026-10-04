@@ -1,0 +1,12 @@
+# Keep all results in Google Drive so they survive a runtime reset (the free quota may need 2 days)
+import shutil
+from google.colab import drive
+
+drive.mount("/content/drive")                                       # asks for permission once
+DRIVE_OUT = pathlib.Path("/content/drive/MyDrive/qabas_eval_v2")
+if pathlib.Path("qabas_eval_v2").exists():                          # copy what this runtime already has
+    shutil.copytree("qabas_eval_v2", DRIVE_OUT, dirs_exist_ok=True)
+DRIVE_OUT.mkdir(parents=True, exist_ok=True)
+OUT = DRIVE_OUT                                                     # every later cell now reads and writes here
+done = sorted(p.relative_to(OUT).as_posix() for p in OUT.glob("*/[ABCD]*.txt"))
+print("Saving to", OUT, "| transcripts already done:", ", ".join(done) or "none")

@@ -34,6 +34,7 @@ class Match:
     ambiguous: bool = False  # the quoted words occur in more than one place
     also_in: list = None     # other places they occur, e.g. ["النساء: 48"]
     source: str = QURAN_SOURCE_LABEL
+    parts: list = None       # a quote joining verses from different places, e.g. الفلق 1 + الناس 1
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), ensure_ascii=False)
@@ -63,7 +64,40 @@ def _index():
 
 
 def verify(recited: str) -> Optional[Match]:
-    """Find the verse(s) the sheikh recited. Returns None for very short input."""
+    """Find the verse(s) the sheikh recited. Returns None for very short input.
+
+    A quote that joins verses from two places ("قل أعوذ برب الفلق وقل أعوذ برب الناس") does not match any one
+    place well; then we try splitting it at a word starting with و and verify each half on its own.
+    """
+    m = _verify_one(recited)
+    if m and m.verified:
+        return m
+    joined = _verify_split(recited)
+    return joined or m
+
+
+def _verify_split(recited: str) -> Optional[Match]:
+    words = recited.split()
+    best = None
+    for i in range(2, len(words) - 1):
+        w = normalize(words[i])
+        if not w.startswith("و") or len(w) < 3:
+            continue
+        left = _verify_one(" ".join(words[:i]))
+        right = _verify_one(" ".join([words[i][1:]] + words[i + 1:]))
+        if left and right and left.verified and right.verified and not _overlaps(
+                (left.surah, left.surah_name, left.ayah_from, left.ayah_to),
+                (right.surah, right.surah_name, right.ayah_from, right.ayah_to)):
+            score = min(left.score, right.score)
+            if not best or score > best.score:
+                best = Match(surah=left.surah, surah_name=left.surah_name, ayah_from=left.ayah_from,
+                             ayah_to=left.ayah_to, text=left.text, score=score, verified=True, also_in=[],
+                             parts=[{"surah_name": x.surah_name, "ayah_from": x.ayah_from, "ayah_to": x.ayah_to,
+                                     "text": x.text} for x in (left, right)])
+    return best
+
+
+def _verify_one(recited: str) -> Optional[Match]:
     query = normalize(recited)
     if len(query) < 8:                      # too short to identify reliably
         return None

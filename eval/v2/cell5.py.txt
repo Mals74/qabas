@@ -1,0 +1,62 @@
+import re, time                                         # parse wait times from errors
+from google import genai                                # Gemini SDK
+from google.genai import types                          # request types
+
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+MODEL = "gemini-3.8-flash"                              # model under test (same as earlier runs)
+
+names = [m.name.split("/")[-1] for m in client.models.list() if "gemini" in m.name]
+print("Available:", ", ".join(sorted(names)))
+assert MODEL in names, f"{MODEL} is not available to this key; pick one from the list above"
+# Glossaries are plain text work: use a Flash-Lite model so they don't use MODEL's daily quota
+GLOSS_MODEL = next((n for n in sorted(names, reverse=True) if "flash-lite" in n and "preview" not in n), MODEL)
+print("Transcription model:", MODEL, "| glossary model:", GLOSS_MODEL)
+
+
+class DailyQuotaError(RuntimeError):
+    pass
+
+
+def _call(model, contents, cfg, attempts=4):
+    # one request with sensible handling of rate limits
+    for i in range(attempts):
+        try:
+            r = client.models.generate_content(model=model, contents=contents, config=types.GenerateContentConfig(**cfg))
+            time.sleep(3)                                # stay under the per-minute limit
+            return r
+        except Exception as e:
+            msg = str(e)
+            if "PerDay" in msg:                          # daily free quota used up: retrying won't help
+                raise DailyQuotaError(
+                    f"Daily quota for {model} is used up. Everything finished so far is saved. "
+                    "Run this cell again after the quota resets (midnight Pacific time), or enable billing.") from None
+            m = re.search(r"retry in ([\d.]+)s", msg)    # per-minute limit: wait as long as Google says
+            wait = float(m.group(1)) + 3 if m else 20 * (i + 1)
+            print(f"   retry {i+1} in {wait:.0f}s: {msg[:120]}")
+            time.sleep(wait)
+    raise RuntimeError("Gemini failed 4 times")
+
+
+def ask_gemini(audio_path, prompt, schema=None):
+    # send an audio file + prompt, return the text answer
+    audio = types.Part.from_bytes(data=pathlib.Path(audio_path).read_bytes(), mime_type="audio/mp3")
+    cfg = dict(temperature=0, max_output_tokens=16384,
+               automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True))
+    if schema:                                           # JSON answer for the negation check
+        cfg.update(response_mime_type="application/json", response_schema=schema)
+    if MODEL.startswith("gemini-2.5-flash"):
+        cfg["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+    r = _call(MODEL, types.Content(parts=[audio, types.Part(text=prompt)]), cfg)
+    fr = str(r.candidates[0].finish_reason) if r.candidates else "?"
+    if "MAX_TOKENS" in fr:
+        print("   ⚠ output was cut off (MAX_TOKENS)")
+    return r.text or ""
+
+
+def ask_text(prompt, schema=None, model=None):
+    # text-only request (used to build glossaries)
+    cfg = dict(temperature=0, max_output_tokens=4096,
+               automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True))
+    if schema:
+        cfg.update(response_mime_type="application/json", response_schema=schema)
+    return _call(model or GLOSS_MODEL, prompt, cfg).text or ""

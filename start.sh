@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One command to run Qabas (used by Replit's Run button and deployments).
+# One command to run Qabas locally without Docker.
 set -e
 cd "$(dirname "$0")"
 
@@ -11,6 +11,6 @@ if command -v npm >/dev/null 2>&1; then
   (cd frontend && npm install --silent && npm run build --silent)
 fi
 
-# 3) Start the API + web app on the port Replit provides
+# 3) Start the API + web app
 cd backend
 exec python -m uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}"

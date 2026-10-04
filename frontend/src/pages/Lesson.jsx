@@ -7,6 +7,7 @@ import { Bulb, Trash } from "../components/Icons.jsx";
 import Player from "../components/Player.jsx";
 import { AnySegment, TextSegment } from "../components/Segments.jsx";
 import { SourceTag, TimePill } from "../components/Tags.jsx";
+import { QualityNote } from "../components/Unsure.jsx";
 
 const TABS = [
   { key: "matn", label: "المتن" },
@@ -59,6 +60,10 @@ export default function LessonPage() {
     }
   };
 
+  // A segment came back from the server after the student settled an unsure word
+  const updateSegment = (seg) =>
+    setLesson((l) => ({ ...l, segments: l.segments.map((s) => (s.id === seg.id ? seg : s)) }));
+
   // Group segments: each matn line with the explanation that follows it
   const groups = useMemo(() => {
     if (!lesson) return [];
@@ -105,6 +110,8 @@ export default function LessonPage() {
 
       {lesson.status === "ready" && (
         <>
+          <QualityNote quality={lesson.quality} segments={lesson.segments} onRetry={() => api.retryExtras(lesson.id).then(() => window.location.reload())} />
+
           <div className="segmented sticky">
             {TABS.map((t) => (
               <button key={t.key} className={tab === t.key ? "active" : ""} onClick={() => setTab(t.key)}>{t.label}</button>
@@ -116,10 +123,10 @@ export default function LessonPage() {
               {groups.length === 0 && <p className="center muted">لم يُقرأ متن في هذا الدرس. راجع تبويب الشرح.</p>}
               {groups.map(({ matn, children }) => (
                 <section key={matn.id} className="matn-group">
-                  <TextSegment seg={matn} onSeek={seek} />
+                  <TextSegment seg={matn} onSeek={seek} onChange={updateSegment} />
                   <div className="matn-children">
                     {children.map((c) => (
-                      <div key={c.id} id={`t-${Math.floor(c.start)}`}><AnySegment seg={c} onSeek={seek} /></div>
+                      <div key={c.id} id={`t-${Math.floor(c.start)}`}><AnySegment seg={c} onSeek={seek} onChange={updateSegment} /></div>
                     ))}
                   </div>
                 </section>
@@ -132,7 +139,7 @@ export default function LessonPage() {
               {lesson.segments.map((s) => (
                 <div key={s.id} id={`t-${Math.floor(s.start)}`}
                   className={focus != null && Math.abs(s.start - focus) < 1 ? "focused" : ""}>
-                  <AnySegment seg={s} onSeek={seek} />
+                  <AnySegment seg={s} onSeek={seek} onChange={updateSegment} />
                 </div>
               ))}
             </div>
