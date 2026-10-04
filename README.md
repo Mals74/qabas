@@ -1,9 +1,11 @@
 # قَبَس — Qabas
 
-> **أسهل طريقة للتجربة: الرابط المباشر** — LIVE_LINK_HERE
+> **أسهل طريقة للتجربة: الرابط المباشر** — **https://qabas-ncea.onrender.com**
 > لا يحتاج إلى مفتاح، والدروس الجاهزة متاحة فورًا، ويمكن إضافة حتى 5 دروس جديدة يوميًا (لأسباب تتعلق بالميزانية).
 >
-> **The easiest way to try Qabas is the live link above** — no key needed; the ready-made lessons open instantly.
+> ملاحظة: الخادم المجاني ينام بعد 15 دقيقة دون زوار، فقد يستغرق الفتح الأول نحو دقيقة. / The free server sleeps when idle; the first visit may take about a minute.
+>
+> **The easiest way to try Qabas is the live link: https://qabas-ncea.onrender.com** — no key needed; the ready-made lessons open instantly.
 > To run it from the source code you need **your own Google Gemini API key** (free at https://aistudio.google.com/apikey):
 > copy `.env.example` to `.env`, put the key in it, then run one of the commands below.
 > Without a key the app still starts: the ready-made lessons, verse checks and hadith word search work; new lessons need the key.
@@ -112,6 +114,8 @@ ask the lessons: whole book in the model's long context → citations verified a
 - The Gemini path is written against the google-genai SDK but was not run end-to-end in the build
   environment (no key / no access to Google). Test it first with a short lesson.
 - Dorar's HTML format was parsed from its documented structure; check the first live results.
-- The Quran text comes from the quran-json package (QuranEnc Uthmani text). If you prefer Tanzil,
-  replace `backend/data/quran_uthmani.json` with the same structure.
+- Displayed verses: the King Fahd Glorious Quran Printing Complex's digital Mushaf text (UthmanicHafs v3.0,
+  `backend/data/quran_kfgqpc.json`, with waqf marks and ayah numbers) shown in the Complex's own font
+  (`frontend/public/fonts/UthmanicHafs-v-3.0.ttf`), taken from the quran-text dataset (quran.ws, CC-BY-4.0).
+  Matching uses `backend/data/quran_uthmani.json` (quran-json package, QuranEnc Uthmani text).
 - No user accounts yet: this is a single private notebook.

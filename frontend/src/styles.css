@@ -1,3 +1,6 @@
+/* The King Fahd Complex's Madinah Mushaf font, bundled with the app: the verses look as in the printed Mushaf */
+@font-face { font-family: "KFGQPC Hafs"; src: url("/fonts/UthmanicHafs-v-3.0.ttf") format("truetype"); font-display: swap; }
+
 /* Qabas: palette and type taken from the mockups */
 :root {
   --bg: #f6f3ec;          /* cream screen */
@@ -15,7 +18,7 @@
   --danger: #a33a2c;
   --font: "IBM Plex Sans Arabic", Tahoma, sans-serif;
   --display: "Readex Pro", "IBM Plex Sans Arabic", Tahoma, sans-serif;
-  --quran: "Amiri Quran", "Amiri", serif;
+  --quran: "KFGQPC Hafs", "Amiri Quran", serif;
 }
 
 * { box-sizing: border-box; }
@@ -129,7 +132,7 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--display); font-weight: 600; }
 .block-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .block-title { font-family: var(--display); font-weight: 600; font-size: 16px; color: var(--green-dark); display: inline-flex; align-items: center; gap: 6px; }
 
-.quran .ayah { font-family: var(--quran); font-size: 25px; line-height: 2.1; color: var(--green-dark); text-align: center; }
+.quran .ayah { font-family: var(--quran); font-size: 27px; line-height: 2.2; color: var(--green-dark); text-align: center; }
 .quran .ref { color: var(--ink-2); font-size: 14px; text-align: center; }
 .recited { font-size: 17px; }
 .hadith .recited { font-weight: 600; color: var(--green-dark); }

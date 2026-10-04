@@ -18,8 +18,12 @@ from .config import DATA_DIR, QURAN_MATCH_THRESHOLD
 # Text file shipped with the app: [{"s": surah_no, "name": "...", "verses": ["...", ...]}]
 QURAN_FILE = DATA_DIR / "quran_uthmani.json"
 
+# The text we DISPLAY: the King Fahd Complex's own digital Mushaf text (UthmanicHafs v3.0), shown in its own font
+# (frontend/public/fonts/UthmanicHafs-v-3.0.ttf). {"ayat": {"113:4": "… ۝٤"}}. The file above is only for matching.
+MUSHAF_FILE = DATA_DIR / "quran_kfgqpc.json"
+
 # Where the text comes from, shown in the UI next to every verified verse
-QURAN_SOURCE_LABEL = "المصحف الشريف - رسم مصحف المدينة"
+QURAN_SOURCE_LABEL = "مصحف المدينة النبوية - نص مجمع الملك فهد لطباعة المصحف الشريف"
 
 
 @dataclass
@@ -63,6 +67,20 @@ def _index():
     return keys, meta
 
 
+@lru_cache(maxsize=1)
+def _mushaf():
+    ayat = json.loads(MUSHAF_FILE.read_text(encoding="utf-8"))["ayat"]
+    names = {x["name"]: x["s"] for x in json.loads(QURAN_FILE.read_text(encoding="utf-8"))}
+    return ayat, names
+
+
+def mushaf_text(surah, ayah_from: int, ayah_to: int) -> str:
+    """The King Fahd Complex text of these verses, with waqf marks and ayah numbers (surah = number or name)."""
+    ayat, names = _mushaf()
+    s = surah if isinstance(surah, int) else names.get(surah)
+    return " ".join(ayat[f"{s}:{a}"] for a in range(ayah_from, ayah_to + 1) if f"{s}:{a}" in ayat)
+
+
 def verify(recited: str) -> Optional[Match]:
     """Find the verse(s) the sheikh recited. Returns None for very short input.
 
@@ -92,7 +110,7 @@ def _verify_split(recited: str) -> Optional[Match]:
             if not best or score > best.score:
                 best = Match(surah=left.surah, surah_name=left.surah_name, ayah_from=left.ayah_from,
                              ayah_to=left.ayah_to, text=left.text, score=score, verified=True, also_in=[],
-                             parts=[{"surah_name": x.surah_name, "ayah_from": x.ayah_from, "ayah_to": x.ayah_to,
+                             parts=[{"surah": x.surah, "surah_name": x.surah_name, "ayah_from": x.ayah_from, "ayah_to": x.ayah_to,
                                      "text": x.text} for x in (left, right)])
     return best
 

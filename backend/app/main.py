@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlmodel import Session, func, select
 
-from . import hadith, pipeline, seed, youtube
+from . import hadith, pipeline, quran, seed, youtube
 from .ai import get_provider
 from .ai.timeparse import fmt
 from .ai import limits
@@ -79,9 +79,13 @@ def segment_out(seg: Segment) -> dict:
         q = json.loads(seg.quran_json)
         ayah = f"{q['ayah_from']}" if q["ayah_from"] == q["ayah_to"] else f"{q['ayah_from']}-{q['ayah_to']}"
         q["ref"] = f"[{q['surah_name']}: {ayah}]"
+        q["text"] = quran.mushaf_text(q["surah"], q["ayah_from"], q["ayah_to"]) or q["text"]   # always the Mushaf's text
+        q["source"] = quran.QURAN_SOURCE_LABEL
         for part in q.get("parts") or []:
             a = f"{part['ayah_from']}" if part["ayah_from"] == part["ayah_to"] else f"{part['ayah_from']}-{part['ayah_to']}"
             part["ref"] = f"[{part['surah_name']}: {a}]"
+            part["text"] = quran.mushaf_text(part.get("surah") or part["surah_name"], part["ayah_from"],
+                                             part["ayah_to"]) or part["text"]
         d["quran"] = q
     if seg.hadith_json:
         d["hadith"] = json.loads(seg.hadith_json)
