@@ -40,7 +40,7 @@ export default function LessonPage() {
     const load = () =>
       api.lesson(id).then((l) => {
         setLesson(l);
-        if (!l.segments?.some((x) => x.kind === "matn" || (x.kind === "hadith" && x.text.trim().split(/\s+/).length >= 3))
+        if (!l.segments?.some((x) => (x.kind === "matn" && !/^[\s«"]*(و\s*)?(في|فى)\s+(رواية|لفظ)[\s:：،,»"]*$/.test(x.text || "")) || (x.kind === "hadith" && x.text.trim().split(/\s+/).length >= 3))
           && l.status === "ready") setTab("sharh");
         if (l.status === "pending" || l.status === "processing") timer = setTimeout(load, 2500);
       }).catch((e) => setError(e.message));
@@ -84,7 +84,9 @@ export default function LessonPage() {
   const groups = useMemo(() => {
     if (!lesson) return [];
     const segs = lesson.segments;
-    const matns = segs.filter((s) => s.kind === "matn");
+    // a line that only says «وفي رواية:» is the sheikh introducing a wording, not the book (older lessons kept it as matn)
+    const marker = (t) => /^[\s«"]*(و\s*)?(في|فى)\s+(رواية|روايه|لفظ)(\s+(أخرى|اخرى|لمسلم|للبخاري))?[\s:：،,»"]*$/.test(t || "");
+    const matns = segs.filter((s) => s.kind === "matn" && !marker(s.text));
     if (matns.length)
       return matns.map((m) => ({ matn: m, children: segs.filter((s) => s.matn_idx === m.idx) }));
     // No line was read from a book (e.g. a lesson on الأربعون النووية, where the matn IS the hadith):
