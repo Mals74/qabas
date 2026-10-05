@@ -7,6 +7,7 @@ import LessonPage from "./pages/Lesson.jsx";
 import AddLesson from "./pages/AddLesson.jsx";
 import SearchPage from "./pages/Search.jsx";
 import About from "./pages/About.jsx";
+import FahrasPage from "./pages/Fahras.jsx";
 
 export default function App() {
   const { pathname } = useLocation();
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/add" element={<AddLesson />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/about" element={<About />} />
+          <Route path="/fahras" element={<FahrasPage />} />
         </Routes>
       </main>
 

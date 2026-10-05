@@ -44,4 +44,7 @@ export const api = {
   takhrij: (segmentId) => request(`/segments/${segmentId}/takhrij`),
   resolve: (segmentId, markId, text) => request(`/segments/${segmentId}/resolve`, json("POST", { mark_id: markId, text })),
   search: (q) => request(`/search?q=${encodeURIComponent(q)}`),
+  fahras: (word) => request(`/fahras?word=${encodeURIComponent(word)}`),
+  fahrasRoot: (root) => request(`/fahras/root?root=${encodeURIComponent(root)}`),
+  fahrasBrowse: (prefix) => request(`/fahras/browse?prefix=${encodeURIComponent(prefix)}`),
 };

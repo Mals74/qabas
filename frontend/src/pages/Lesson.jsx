@@ -6,6 +6,7 @@ import { ErrorBox, Loading, PageHeader } from "../components/Common.jsx";
 import { Bulb, Trash } from "../components/Icons.jsx";
 import Player from "../components/Player.jsx";
 import { AnySegment, Playback, TextSegment } from "../components/Segments.jsx";
+import { WordPicker } from "../components/Fahras.jsx";
 import { SourceTag, TimePill } from "../components/Tags.jsx";
 import { QualityNote } from "../components/Unsure.jsx";
 
@@ -114,6 +115,7 @@ export default function LessonPage() {
           <div className="spinner" />
           <p>جارٍ تحويل الدرس إلى دفتر منظّم…</p>
           <p className="muted small">{lesson.progress}</p>
+          {lesson.expected_sec > 0 && <Eta elapsed={lesson.elapsed_sec} expected={lesson.expected_sec} />}
         </div>
       )}
       {lesson.status === "error" && (
@@ -133,6 +135,8 @@ export default function LessonPage() {
             ))}
           </div>
 
+          <p className="muted small center">اضغط على أي كلمة لتبحث عن معناها في الفهرس</p>
+          <WordPicker>
           {tab === "matn" && (
             <div className="list">
               {groups.length === 0 && <p className="center muted">لم يُقرأ متن في هذا الدرس. راجع تبويب الشرح.</p>}
@@ -159,6 +163,8 @@ export default function LessonPage() {
               ))}
             </div>
           )}
+
+          </WordPicker>
 
           {tab === "notes" && (
             <Notes lesson={lesson} setLesson={setLesson} player={player} onSeek={seek} />
@@ -229,6 +235,23 @@ function Notes({ lesson, setLesson, player, onSeek }) {
         <h3 className="section-title">بطاقات المراجعة</h3>
         <Cards cards={lesson.cards} rejected={lesson.cards_rejected} onSeek={onSeek} />
       </section>
+    </div>
+  );
+}
+
+
+// "About N minutes left" from the server's estimate; past the estimate it says it is taking longer than usual
+function Eta({ elapsed, expected }) {
+  const left = Math.ceil((expected - elapsed) / 60);
+  const pct = Math.min(95, Math.round((elapsed / expected) * 100));
+  return (
+    <div className="eta">
+      <div className="eta-bar"><div style={{ width: `${pct}%` }} /></div>
+      <p className="muted small">
+        {left > 0
+          ? `الوقت المتبقي تقريبًا: ${left === 1 ? "دقيقة" : left === 2 ? "دقيقتان" : `${left} دقائق`} (مضى ${Math.floor(elapsed / 60)} د)`
+          : "يستغرق أطول من المعتاد بسبب ضغط الخوادم… أبقِ الصفحة مفتوحة"}
+      </p>
     </div>
   );
 }

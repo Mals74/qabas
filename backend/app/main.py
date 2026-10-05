@@ -3,6 +3,7 @@
 Run locally:  uvicorn app.main:app --reload --port 8000   (from the backend folder)
 """
 import json
+from datetime import datetime, timezone
 import re
 import shutil
 import threading
@@ -16,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlmodel import Session, func, select
 
-from . import hadith, pipeline, quran, seed, youtube
+from . import fahras, hadith, pipeline, quran, seed, youtube
 from .ai import get_provider
 from .ai.timeparse import fmt
 from .ai import limits
@@ -54,6 +55,7 @@ def _warm_up() -> None:
     try:
         from . import hadith_index
         quran._index()
+        fahras._roots()                                  # also unpacks the dictionaries on first start
         hadith_index.get_index()
         print("[startup] Quran and hadith indexes ready", flush=True)
     except Exception as e:                                   # the lesson pipeline builds them later if this fails
@@ -85,7 +87,21 @@ def lesson_card(les: Lesson, book: Optional[Book] = None) -> dict:
         "number": les.number, "title": les.title, "sheikh": les.sheikh, "date": les.date,
         "duration": fmt(les.duration_sec), "status": les.status, "progress": les.progress,
         "error": les.error, "is_sample": les.is_sample, "source_type": les.source_type,
+        **_eta(les),
     }
+
+
+def _eta(les: Lesson) -> dict:
+    """Rough time to finish, for the progress screen. Measured: a 10-minute clip took 3.2 minutes end to end
+    (two readings, re-listening to disputed spots, verses, hadith, summary, cards) -> about 0.35 x audio + 1 minute."""
+    if les.status not in ("pending", "processing"):
+        return {}
+    audio = les.duration_sec or (MAX_LESSON_MINUTES * 60 if MAX_LESSON_MINUTES else 3600)
+    if MAX_LESSON_MINUTES:
+        audio = min(audio, MAX_LESSON_MINUTES * 60)
+    created = les.created_at if les.created_at.tzinfo else les.created_at.replace(tzinfo=timezone.utc)
+    return {"elapsed_sec": int((datetime.now(timezone.utc) - created).total_seconds()),
+            "expected_sec": int(audio * 0.35 + 60)}
 
 
 def segment_out(seg: Segment) -> dict:
@@ -370,6 +386,31 @@ def resolve(segment_id: int, body: ResolveIn, s: Session = Depends(get_session))
 
 
 # ---------------- search ----------------
+
+# ---------------- الفهرس: word meanings from classical dictionaries (no AI) ----------------
+
+@app.get("/api/fahras")
+def fahras_lookup(word: str):
+    if not fahras.available():
+        raise HTTPException(503, "الفهرس غير متاح على هذا الخادم")
+    if len(fahras.clean_word(word)) < 2:
+        raise HTTPException(400, "اكتب كلمة من حرفين على الأقل")
+    return fahras.lookup(word[:40])
+
+
+@app.get("/api/fahras/root")
+def fahras_root(root: str):
+    """Full entries of one root (the lookup returns shortened ones)."""
+    found = fahras.entries(root[:40])
+    if not found:
+        raise HTTPException(404, "لا يوجد هذا الجذر في المعاجم")
+    return {"root": root.strip('"'), "source": fahras.SOURCE, "entries": found}
+
+
+@app.get("/api/fahras/browse")
+def fahras_browse(prefix: str):
+    return {"roots": fahras.browse(prefix[:10])}
+
 
 @app.get("/api/search")
 def search(q: str = "", s: Session = Depends(get_session)):

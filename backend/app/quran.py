@@ -18,8 +18,9 @@ from .config import DATA_DIR, QURAN_MATCH_THRESHOLD
 # Text file shipped with the app: [{"s": surah_no, "name": "...", "verses": ["...", ...]}]
 QURAN_FILE = DATA_DIR / "quran_uthmani.json"
 
-# The text we DISPLAY: the King Fahd Complex's own digital Mushaf text (UthmanicHafs v3.0), shown in its own font
-# (frontend/public/fonts/UthmanicHafs-v-3.0.ttf). {"ayat": {"113:4": "… ۝٤"}}. The file above is only for matching.
+# The text we DISPLAY: the King Fahd Complex's official digital Mushaf data (UthmanicHafs v2.0, downloaded from
+# download.qurancomplex.gov.sa), copied as is, with its own ayah-number symbols, shown in the Complex's own font
+# (frontend/public/fonts/uthmanic_hafs_v20.ttf). {"ayat": {"113:4": "…"}}. The file above is only for matching.
 MUSHAF_FILE = DATA_DIR / "quran_kfgqpc.json"
 
 # Where the text comes from, shown in the UI next to every verified verse

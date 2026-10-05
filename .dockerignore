@@ -8,3 +8,4 @@ eval
 notebooks
 .git
 .env
+backend/data/fahras.db

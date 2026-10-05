@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import { PageHeader } from "../components/Common.jsx";
 import { Search } from "../components/Icons.jsx";
@@ -8,6 +8,7 @@ export default function SearchPage() {
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(params.get("q") || "");
   const [res, setRes] = useState(null);
+  const nav = useNavigate();
 
   useEffect(() => {
     const query = params.get("q");
@@ -21,6 +22,10 @@ export default function SearchPage() {
         <Search size={20} />
         <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث عن كتاب، درس، أو كلمة…" />
       </form>
+
+      <button className="link-btn" onClick={() => nav(q.trim() ? `/fahras?w=${encodeURIComponent(q.trim())}` : "/fahras")}>
+        ابحث عن معنى كلمة في الفهرس (المعاجم العربية)
+      </button>
 
       {res && (
         <>

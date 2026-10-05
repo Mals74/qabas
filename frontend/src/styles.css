@@ -1,5 +1,5 @@
 /* The King Fahd Complex's Madinah Mushaf font, bundled with the app: the verses look as in the printed Mushaf */
-@font-face { font-family: "KFGQPC Hafs"; src: url("/fonts/UthmanicHafs-v-3.0.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "KFGQPC Hafs"; src: url("/fonts/uthmanic_hafs_v20.ttf") format("truetype"); font-display: swap; }
 
 /* Qabas: palette and type taken from the mockups */
 :root {
@@ -217,3 +217,25 @@ ul.plain { margin: 0; padding-inline-start: 18px; line-height: 2; color: var(--i
 /* hadith text: long narrations are folded until the student asks for all of it */
 .hadith-text.folded { max-height: 9.5em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
 .link-btn { align-self: flex-start; background: none; border: 0; color: var(--green-dark); font: inherit; font-size: 14px; padding: 2px 0; cursor: pointer; text-decoration: underline; }
+
+/* processing ETA */
+.eta { width: min(320px, 90%); margin: 8px auto 0; }
+.eta-bar { height: 6px; background: var(--panel); border-radius: 3px; overflow: hidden; }
+.eta-bar > div { height: 100%; background: var(--green); transition: width 1s; }
+
+/* الفهرس */
+.word-picker { position: relative; }
+.fahras-pick { position: absolute; z-index: 20; background: var(--green); color: #fff; border: 0; border-radius: 12px;
+  padding: 8px 12px; font: inherit; font-size: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.18); cursor: pointer; white-space: nowrap; }
+.sheet-backdrop { position: fixed; inset: 0; background: rgba(16,33,30,.35); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.sheet { background: var(--bg); width: min(560px, 100%); max-height: 82vh; overflow-y: auto; border-radius: 20px 20px 0 0; padding: 16px 16px 28px; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.sheet-head h3 { font-size: 18px; color: var(--green-dark); }
+.fahras { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.fahras-roots { display: flex; flex-wrap: wrap; gap: 8px; }
+.fahras-roots button { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 6px 14px; font: inherit; font-size: 17px; cursor: pointer; }
+.fahras-roots button.active { background: var(--green); color: #fff; border-color: var(--green); }
+.fahras-entry { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.fahras-entry h4 { font-size: 15px; color: var(--gold-text); margin-bottom: 6px; }
+.fahras-entry p { margin: 0 0 6px; line-height: 1.9; }
+.fahras-source { margin-top: 4px; }

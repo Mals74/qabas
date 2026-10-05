@@ -10,3 +10,4 @@ frontend/dist/
 *.db
 eval/runs/
 eval/clip01.zip
+backend/data/fahras.db
