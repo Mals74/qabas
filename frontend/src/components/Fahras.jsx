@@ -2,7 +2,7 @@
 // - FahrasResults: the roots a word may come from, each with its dictionary entries and their books
 // - FahrasSheet: the same in a bottom sheet, opened from a word the student tapped in the transcript
 // - WordPicker: wraps the transcript; tapping a word offers «ابحث في الفهرس»
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api } from "../api.js";
 
 export function FahrasResults({ word }) {
@@ -94,23 +94,51 @@ export function WordPicker({ children }) {
   const box = useRef(null);
 
   const onClick = (e) => {
-    if (e.target.closest("button, a, input, textarea, .unsure, .review, .fahras-pick")) return;
+    if (e.target.closest(".fahras-pick")) return;
+    if (e.target.closest("button, a, input, textarea, .unsure, .review")) return setPick(null);
     if (window.getSelection()?.toString()) return;          // selecting text, not tapping a word
     const word = wordAt(e.clientX, e.clientY);
     const letters = word.replace(/[^ء-ي]/g, "");
-    if (letters.length < 2) return setPick(null);
+    if (letters.length < 2 || (pick && pick.word === word)) return setPick(null);   // a second tap closes it
     const rect = box.current.getBoundingClientRect();
     setPick({ word, x: e.clientX - rect.left, y: e.clientY - rect.top });
   };
+
+  // Keep the popup inside the screen: centre it on the tap, then pull it back from the edges
+  const popup = useRef(null);
+  useLayoutEffect(() => {
+    if (!pick || !popup.current || !box.current) return;
+    const w = popup.current.offsetWidth, max = box.current.clientWidth - w - 8;
+    popup.current.style.left = `${Math.max(8, Math.min(pick.x - w / 2, max))}px`;
+  }, [pick]);
+
+  // An accidental tap must be easy to undo: ✕, a tap anywhere else, Esc, scrolling, or 6 seconds all close it
+  useEffect(() => {
+    if (!pick) return;
+    const outside = (e) => { if (!box.current?.contains(e.target)) setPick(null); };
+    const esc = (e) => { if (e.key === "Escape") setPick(null); };
+    const startY = window.scrollY;                  // close on a real scroll, not on a small layout shift
+    const scrolled = () => { if (Math.abs(window.scrollY - startY) > 60) setPick(null); };
+    const timer = setTimeout(() => setPick(null), 6000);
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", esc);
+    window.addEventListener("scroll", scrolled, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", esc);
+      window.removeEventListener("scroll", scrolled);
+    };
+  }, [pick]);
 
   return (
     <div ref={box} className="word-picker" onClick={onClick}>
       {children}
       {pick && (
-        <button className="fahras-pick" style={{ top: pick.y + 14, left: Math.max(8, pick.x - 90) }}
-          onClick={() => { setOpen(pick.word); setPick(null); }}>
-          ابحث في الفهرس: «{pick.word}»
-        </button>
+        <div ref={popup} className="fahras-pick" style={{ top: pick.y + 14, left: 8 }}>
+          <button onClick={() => { setOpen(pick.word); setPick(null); }}>ابحث في الفهرس: «{pick.word}»</button>
+          <button className="fahras-pick-x" onClick={() => setPick(null)} aria-label="إغلاق">✕</button>
+        </div>
       )}
       <FahrasSheet word={open} onClose={() => setOpen("")} />
     </div>

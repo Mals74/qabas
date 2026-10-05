@@ -40,6 +40,8 @@ export default function LessonPage() {
     const load = () =>
       api.lesson(id).then((l) => {
         setLesson(l);
+        if (!l.segments?.some((x) => x.kind === "matn" || (x.kind === "hadith" && x.text.trim().split(/\s+/).length >= 3))
+          && l.status === "ready") setTab("sharh");
         if (l.status === "pending" || l.status === "processing") timer = setTimeout(load, 2500);
       }).catch((e) => setError(e.message));
     load();
@@ -81,8 +83,19 @@ export default function LessonPage() {
   // Group segments: each matn line with the explanation that follows it
   const groups = useMemo(() => {
     if (!lesson) return [];
-    const matns = lesson.segments.filter((s) => s.kind === "matn");
-    return matns.map((m) => ({ matn: m, children: lesson.segments.filter((s) => s.matn_idx === m.idx) }));
+    const segs = lesson.segments;
+    const matns = segs.filter((s) => s.kind === "matn");
+    if (matns.length)
+      return matns.map((m) => ({ matn: m, children: segs.filter((s) => s.matn_idx === m.idx) }));
+    // No line was read from a book (e.g. a lesson on الأربعون النووية, where the matn IS the hadith):
+    // use the hadith the sheikh quoted as the anchors, each with what he said after it
+    // («وفي رواية: بالنية» is a wording of the hadith before it, so it stays under it rather than starting a group)
+    const isAnchor = (s) => s.kind === "hadith" && s.hadith?.method !== "variant" && s.text.trim().split(/\s+/).length >= 3;
+    const anchors = segs.filter(isAnchor);
+    return anchors.map((a, i) => {
+      const next = anchors[i + 1] ? anchors[i + 1].idx : Infinity;
+      return { matn: a, children: segs.filter((s) => s.idx > a.idx && s.idx < next) };
+    });
   }, [lesson]);
 
   if (error) return <div className="page"><ErrorBox message={error} /></div>;
@@ -139,10 +152,17 @@ export default function LessonPage() {
           <WordPicker>
           {tab === "matn" && (
             <div className="list">
-              {groups.length === 0 && <p className="center muted">لم يُقرأ متن في هذا الدرس. راجع تبويب الشرح.</p>}
+              {groups.length === 0 && (
+                <div className="center">
+                  <p className="muted">لم يُقرأ في هذا الدرس سطر من كتاب، فالدرس كله في تبويب الشرح.</p>
+                  <button className="btn-outline" onClick={() => setTab("sharh")}>افتح الشرح</button>
+                </div>
+              )}
               {groups.map(({ matn, children }) => (
                 <section key={matn.id} className="matn-group">
-                  <TextSegment seg={matn} onSeek={seek} onChange={updateSegment} />
+                  {matn.kind === "matn"
+                    ? <TextSegment seg={matn} onSeek={seek} onChange={updateSegment} />
+                    : <AnySegment seg={matn} onSeek={seek} onChange={updateSegment} />}
                   <div className="matn-children">
                     {children.map((c) => (
                       <div key={c.id} id={`t-${Math.floor(c.start)}`}><AnySegment seg={c} onSeek={seek} onChange={updateSegment} /></div>
