@@ -419,8 +419,15 @@ def takhrij(segment_id: int, s: Session = Depends(get_session), me: str = Depend
     _lesson_for(s, seg.lesson_id, me)
     if seg.hadith_json:
         return json.loads(seg.hadith_json)
-    result = hadith.takhrij(seg.hadith_query or seg.text, get_provider())
-    if result["results"] and result.get("method") != "candidate":   # cache only confirmed answers
+    prev = None
+    if hadith.needs_previous(seg.hadith_query or seg.text):            # «وفي رواية: بالنية»
+        near = s.exec(select(Segment).where(Segment.lesson_id == seg.lesson_id, Segment.kind == "hadith",
+                                            Segment.idx < seg.idx, Segment.idx >= seg.idx - 4)).all()
+        prev = pipeline.previous_hadith(list(near), seg)
+    result = hadith.takhrij_variant(prev.hadith_query or prev.text, seg.hadith_query or seg.text) if prev else None
+    if result is None or not hadith.keep_variant(result, seg.hadith_query or seg.text):
+        result = hadith.takhrij(seg.hadith_query or seg.text, get_provider())
+    if (result["results"] or result.get("variant_of")) and result.get("method") != "candidate":   # confirmed answers
         seg.hadith_json = json.dumps(result, ensure_ascii=False)
         s.add(seg)
         s.commit()

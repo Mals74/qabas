@@ -8,6 +8,7 @@ Principle: the AI proposes, the trusted source confirms.
 """
 import json
 import traceback
+from typing import Optional
 
 from rapidfuzz import fuzz
 from sqlmodel import Session, delete, select
@@ -124,16 +125,31 @@ def _finish(session: Session, lesson: Lesson, provider, segments: list[Segment])
     _set(session, lesson, status="ready", progress="")
 
 
+def previous_hadith(segments: list[Segment], seg: Segment, reach: int = 4) -> Optional[Segment]:
+    """The hadith quoted just before this segment (at most `reach` segments earlier), if any."""
+    before = [x for x in segments if x.kind == "hadith" and seg.idx - reach <= x.idx < seg.idx]
+    return max(before, key=lambda x: x.idx) if before else None
+
+
 def lookup_hadith(session: Session, lesson: Lesson, segments: list[Segment], provider) -> None:
     """Find the full hadith for the quotes that have no result yet, and keep the confirmed ones."""
     todo = [s for s in segments if s.kind == "hadith" and not s.hadith_json][:HADITH_MAX_PER_LESSON]
     if not todo:
         return
     _set(session, lesson, progress="البحث عن الأحاديث في كتب الحديث")
-    results = hadith.takhrij_many([(str(s.id), s.hadith_query or s.text) for s in todo], provider)
+    results = {}
+    normal = []
+    for s in todo:                                           # «وفي رواية: بالنية» → a wording of the previous hadith
+        prev = previous_hadith(segments, s) if hadith.needs_previous(s.hadith_query or s.text) else None
+        r = hadith.takhrij_variant(prev.hadith_query or prev.text, s.hadith_query or s.text) if prev else None
+        if r is not None and hadith.keep_variant(r, s.hadith_query or s.text):
+            results[str(s.id)] = r
+        else:
+            normal.append(s)
+    results.update(hadith.takhrij_many([(str(s.id), s.hadith_query or s.text) for s in normal], provider))
     for s in todo:
         r = results.get(str(s.id))
-        if r and r["results"] and r["method"] != "candidate":     # unconfirmed candidates are not kept: a later click retries
+        if r and (r["results"] or r.get("variant_of")) and r["method"] != "candidate":   # unconfirmed candidates are not kept
             s.hadith_json = json.dumps(r, ensure_ascii=False)
             session.add(s)
     session.commit()
@@ -162,6 +178,8 @@ def build_segments(lesson_id: int, raw: list[dict]) -> list[Segment]:
     for i, r in enumerate(raw):
         kind = (r.get("kind") or "sharh").strip().lower()
         kind = kind if kind in VALID_KINDS else "sharh"
+        if kind == "matn" and hadith.is_variant_marker(r.get("text") or ""):
+            kind = "sharh"                          # «وفي رواية:» is the sheikh introducing a wording, not the book
         text = (r.get("text") or "").strip()
         if not text:
             continue

@@ -20,7 +20,7 @@ from .config import HADITH_PER_REQUEST
 
 # Words that introduce a quote rather than belong to it ("قال عليه الصلاة والسلام: …")
 _LEAD = {"قال", "فقال", "وقال", "يقول", "قوله", "حديث", "والله", "قالت", "فقالت", "عليه", "الصلاة", "والسلام",
-         "صلى", "وسلم"}
+         "صلى", "وسلم", "وفي", "رواية", "لفظ"}
 _HONORIFIC = re.compile(r"صلي الله عليه وسلم|رضي الله عنهما|رضي الله عنها|رضي الله عنهم|رضي الله عنه|عليه السلام")
 
 
@@ -112,6 +112,90 @@ def takhrij_many(items: list[tuple[str, str]], provider=None) -> dict[str, dict]
             out[key] = dict(p["base"], results=[_from_books(idx, g, "candidate") for g in cands[:3]], method="candidate",
                             message="لم يُتأكد من المطابقة: هذه أقرب الأحاديث لكلام الشيخ، فراجعها.")
     return out
+
+
+# ---------------- «وفي رواية: …» — a variant wording of the hadith the sheikh just quoted ----------------
+# Sheikhs often quote a famous hadith and then list its wordings: «إنما الأعمال بالنيات … وفي رواية: بالنية».
+# The variant alone («بالنية») is too short to search. We rebuild the full wording by putting the variant word in place
+# of the closest word of the previous hadith («إنما الأعمال بالنية»), then accept only a hadith whose text contains
+# that wording word for word — no AI involved.
+
+_VARIANT_MARK = re.compile(r"^\W*(?:و\s*)?(?:في|فى)\s+(?:رواية|روايه|لفظ)(?:\s+(?:أخرى|اخرى|لمسلم|للبخاري|عند\s+\S+))?\s*[:：،,]?\s*")
+_BOOK_ORDER = ["bukhari", "muslim", "abudawud", "tirmidhi", "nasai", "ibnmajah", "malik", "nawawi", "qudsi"]
+
+
+def says_variant(text: str) -> bool:
+    """The sheikh said «وفي رواية / وفي لفظ» himself."""
+    return bool(_VARIANT_MARK.match(strip_diacritics(text or "").strip()))
+
+
+def keep_variant(result: dict, fragment: str) -> bool:
+    """Use the variant result, or search the quote on its own? A short quote that was not found as a wording of the
+    previous hadith may be a hadith of its own (e.g. «حديث الإفك»), unless the sheikh said «وفي رواية»."""
+    return result["method"] == "variant" or says_variant(fragment) or len(_core_words(fragment)) < 2
+
+
+def is_variant_marker(text: str) -> bool:
+    """A line that only says «وفي رواية:» (the wording itself follows in the next line)."""
+    rest = _VARIANT_MARK.sub("", strip_diacritics(text or "").strip(), count=1)
+    return bool(_VARIANT_MARK.match(strip_diacritics(text or "").strip())) and len(re.sub(r"[^ء-ي]", "", rest)) == 0
+
+
+def needs_previous(fragment: str) -> bool:
+    """Too short to find on its own, or explicitly «وفي رواية …»: read it as a wording of the previous hadith."""
+    plain = strip_diacritics(fragment or "").strip()
+    return len(_core_words(fragment)) < 3 or bool(_VARIANT_MARK.match(plain))
+
+
+def variant_phrase(previous: str, fragment: str) -> tuple[list[str], set[int]]:
+    """The previous hadith's words with the variant put in place of the word(s) it replaces,
+    and the positions of the variant's own words in it (every search must keep at least one of them)."""
+    from rapidfuzz import fuzz
+    base = _core_words(previous)
+    var = _core_words(_VARIANT_MARK.sub("", strip_diacritics(fragment or "").strip(), count=1))
+    if not base or len(var) >= 3:                      # nothing to build on, or a full wording of its own
+        return var, set(range(len(var)))
+    words, at = list(base), []
+    for v in var:
+        scores = [fuzz.ratio(normalize(w), normalize(v)) for w in words]
+        j = max(range(len(words)), key=scores.__getitem__)
+        if scores[j] >= 55:
+            words[j] = v
+            at.append(j)
+        else:                                          # nothing it replaces: the variant adds to the hadith
+            words.append(v)
+            at.append(len(words) - 1)
+    lo, hi = max(0, min(at) - 3), min(len(words), max(at) + 4)
+    return words[lo:hi], {j - lo for j in at}
+
+
+def takhrij_variant(previous: str, fragment: str) -> dict:
+    """Find the hadith with this wording. method = variant (found word for word) | none."""
+    idx = hadith_index.get_index()
+    words, keep = variant_phrase(previous, fragment)
+    phrase = " ".join(words)
+    prev_q = build_query(previous)
+    base = {"ok": True, "query": phrase, "results": [], "search_url": search_link(phrase or prev_q),
+            "variant_of": prev_q}
+    if len(words) < 2 or not idx:
+        return dict(base, method="none", message="رواية أخرى للحديث السابق؛ ابحث عن لفظها في الدرر السنية.")
+    # the full rebuilt wording first, then shorter windows (two words at least) that still hold the variant's words
+    tries = [(0, len(words))] + [(i, i + n) for n in range(len(words) - 1, 1, -1) for i in range(len(words) - n + 1)]
+    for a, b in tries:
+        if not any(a <= j < b for j in keep):
+            continue
+        t = words[a:b]
+        want = hadith_index.prep(" ".join(t))
+        hits = [g for g in idx.candidates(" ".join(t), k=40) if want in hadith_index.prep(idx.info(g)["text"])]
+        if hits:
+            hits.sort(key=lambda g: _BOOK_ORDER.index(g.split(":")[0]) if g.split(":")[0] in _BOOK_ORDER else 99)
+            found = " ".join(t)
+            return dict(base, query=found, search_url=search_link(found), method="variant",
+                        results=[_from_books(idx, hits[0], "variant")],
+                        message=f"رواية أخرى للحديث السابق («{prev_q}») بلفظ «{found}»؛ وردت بهذا اللفظ في الكتاب.")
+    return dict(base, method="none",
+                message=f"رواية أخرى للحديث السابق («{prev_q}») بلفظ «{phrase}»؛ لم نجد هذا اللفظ بعينه في الكتب "
+                        "المتاحة، فابحث عنه في الدرر السنية.")
 
 
 def takhrij(fragment: str, provider=None) -> dict:

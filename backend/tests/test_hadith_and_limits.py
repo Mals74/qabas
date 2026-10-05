@@ -412,3 +412,25 @@ def test_a_quote_joining_two_surahs_is_verified_as_two_verses():
     assert m.verified and [(p["surah_name"], p["ayah_from"]) for p in m.parts] == [("الفلق", 1), ("الناس", 1)]
     one = quran.verify("إذ تستغيثون ربكم فاستجاب لكم")
     assert one.verified and not one.parts and one.surah_name == "الأنفال"
+
+
+# ---------------- «وفي رواية: …» ----------------
+
+def test_a_variant_wording_is_read_with_the_hadith_before_it():
+    r = hadith.takhrij_variant("إنما الأعمال بالنيات، وإنما لكل امرئ ما نوى", "«بالنية»")
+    assert r["method"] == "variant" and "بالنية" in r["query"]
+    assert "صحيح البخاري" in r["results"][0]["source"]
+    assert "بالنيه" in hadith_index.prep(r["results"][0]["text"])
+    assert hadith.is_variant_marker("وفي رواية:") and not hadith.is_variant_marker("وفي رواية: بالنية")
+    assert hadith.needs_previous("«بالنية»") and not hadith.needs_previous("إنما الأعمال بالنيات وإنما لكل امرئ ما نوى")
+
+
+def test_a_variant_not_in_the_books_says_so():
+    r = hadith.takhrij_variant("إنما الأعمال بالنيات", "وفي رواية: بالمقاصد")
+    assert r["method"] == "none" and r["results"] == [] and "الدرر" in r["message"]
+
+
+def test_a_short_quote_that_is_not_a_variant_is_searched_on_its_own():
+    r = hadith.takhrij_variant("إنما الأعمال بالنيات", "حديث جبريل")
+    assert r["method"] == "none" and not hadith.keep_variant(r, "حديث جبريل")        # → normal search
+    assert hadith.keep_variant(r, "وفي رواية: بالمقاصد")                               # the sheikh said «وفي رواية»

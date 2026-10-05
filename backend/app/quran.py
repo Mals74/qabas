@@ -24,7 +24,7 @@ QURAN_FILE = DATA_DIR / "quran_uthmani.json"
 MUSHAF_FILE = DATA_DIR / "quran_kfgqpc.json"
 
 # Where the text comes from, shown in the UI next to every verified verse
-QURAN_SOURCE_LABEL = "مصحف المدينة النبوية - نص مجمع الملك فهد لطباعة المصحف الشريف"
+QURAN_SOURCE_LABEL = "مصحف المدينة النبوية (الطبعة الحديثة) - النص الرقمي لمجمع الملك فهد لطباعة المصحف الشريف"
 
 
 @dataclass

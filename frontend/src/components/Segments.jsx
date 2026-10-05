@@ -76,6 +76,7 @@ const HOW = {
   rule: { kind: "verified", text: "مطابقة نصية: وردت في هذا الحديث خمس كلمات متتالية أو أكثر من كلام الشيخ" },
   check: { kind: "ai", text: "وُجد بفحص آلي للمعنى بين أقرب الأحاديث؛ تحقّق منه قبل الاعتماد" },
   candidate: { kind: "warn", text: "مرشّح غير مؤكد" },
+  variant: { kind: "verified", text: "رواية أخرى للحديث السابق: وُجد هذا اللفظ بعينه في الكتاب" },
 };
 
 // The same search on dorar.net, for the student to check by hand
