@@ -8,7 +8,7 @@ from app import config, hadith, hadith_index, pipeline, seed
 from app.ai import limits
 from app.ai.gemini import BusyError, GeminiProvider, QuotaError, classify_error, pick_backups
 from app.ai.mock import MockProvider
-from app.db import Book, Card, Lesson, Segment, engine, init_db
+from app.db import Book, Card, Lesson, Note, Segment, engine, init_db
 
 NIYYAT = "إنما الأعمال بالنيات وإنما لكل امرئ ما نوى"          # Bukhari 1, quoted almost in full
 PARAPHRASE = "حديث الرجل الذي قتل تسعة وتسعين نفسا"                      # by name: the rule cannot settle it
@@ -352,7 +352,7 @@ def test_seed_roundtrip(tmp_path, monkeypatch):
         seed.write_seed(s, lid, "t")
         n_seg = len(s.exec(select(Segment).where(Segment.lesson_id == lid)).all())
         assert seed.import_seeds(s) == 0                                           # already in the database: not doubled
-        for m in (Segment, Card, Lesson, Book):                                    # empty database, like a fresh restart
+        for m in (Note, Segment, Card, Lesson, Book):                              # empty database, like a fresh restart
             for row in s.exec(select(m)).all():
                 s.delete(row)
         s.commit()
@@ -377,7 +377,7 @@ def test_daily_lesson_limit_on_the_live_link(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "AI_PROVIDER", "gemini")
     monkeypatch.setattr(main, "_run_in_background", lambda lesson_id: None)
     monkeypatch.setattr(limits, "lessons", limits.Quota(2))
-    client = TestClient(main.app)
+    client = TestClient(main.app, headers={"X-Qabas-Owner": "device-aaaaaaaaaaaaaaaa"})
     form = {"title": "t", "new_book_title": "b", "youtube_url": "https://youtu.be/pjFst8J5hTo"}
     assert client.post("/api/lessons", data=form).status_code == 200
     assert client.post("/api/lessons", data=form).status_code == 200

@@ -66,14 +66,14 @@ def import_seeds(session: Session) -> int:
         except (ValueError, KeyError):
             print(f"seed: skipped {path.name} (not a valid lesson file)")
             continue
-        book = session.exec(select(Book).where(Book.title == b["title"])).first()
+        book = session.exec(select(Book).where(Book.title == b["title"], Book.owner == "")).first()
         if book is None:
             book = Book(title=b["title"], author=b.get("author", ""))
             session.add(book)
             session.commit()
             session.refresh(book)
         if session.exec(select(Lesson).where(Lesson.book_id == book.id, Lesson.number == l["number"],
-                                             Lesson.title == l["title"])).first():
+                                             Lesson.title == l["title"], Lesson.owner == "")).first():
             continue                                     # already loaded
         lesson = Lesson(book_id=book.id, status="ready", is_sample=False, **l)
         session.add(lesson)

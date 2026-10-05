@@ -277,8 +277,9 @@ PERSONAL_NOTE = "هذا سؤال عن حالة شخصية؛ قَبَس لا يُ
 NOT_FOUND = "لم أجد جواب هذا السؤال في الدروس المسجلة."
 
 
-def ask_book(session: Session, book_id: int, question: str) -> dict:
-    lessons = session.exec(select(Lesson).where(Lesson.book_id == book_id, Lesson.status == "ready")
+def ask_book(session: Session, book_id: int, question: str, owner: str = "") -> dict:
+    lessons = session.exec(select(Lesson).where(Lesson.book_id == book_id, Lesson.status == "ready",
+                                                Lesson.owner.in_(["", owner]))
                            .order_by(Lesson.number)).all()
     if not lessons:
         return {"found": False, "answer": "لا توجد دروس جاهزة في هذا الكتاب بعد.", "citations": []}
@@ -329,14 +330,14 @@ def _nearest_supported(segs: list[Segment], start: float, quote: str):
 
 # ---------------- Search ----------------
 
-def search(session: Session, q: str, limit: int = 30) -> dict:
+def search(session: Session, q: str, limit: int = 30, owner: str = "") -> dict:
     nq = normalize(q)
     if len(nq) < 2:
         return {"books": [], "segments": []}
-    books = [b for b in session.exec(select(Book)).all() if nq in normalize(b.title)]
+    books = [b for b in session.exec(select(Book).where(Book.owner.in_(["", owner]))).all() if nq in normalize(b.title)]
     hits = []
     rows = session.exec(select(Segment, Lesson, Book).where(Segment.lesson_id == Lesson.id)
-                        .where(Lesson.book_id == Book.id)).all()
+                        .where(Lesson.book_id == Book.id).where(Lesson.owner.in_(["", owner]))).all()
     for seg, les, book in rows:
         if seg.kind == "audience":
             continue

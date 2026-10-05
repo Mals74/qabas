@@ -1,9 +1,24 @@
 // Tiny API client for the FastAPI backend.
 
+// This device's private id: lessons and notes added here are visible only with it (no accounts needed).
+// Kept in the browser; clearing site data starts a fresh, empty notebook.
+function ownerId() {
+  const make = () => (crypto.randomUUID ? crypto.randomUUID()
+    : Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join(""));
+  try {
+    let id = localStorage.getItem("qabas-owner");
+    if (!id) { id = make(); localStorage.setItem("qabas-owner", id); }
+    return id;
+  } catch {
+    window.__qabasOwner = window.__qabasOwner || make();   // storage blocked: private for this visit only
+    return window.__qabasOwner;
+  }
+}
+
 async function request(path, options = {}) {
   let res;
   try {
-    res = await fetch(`/api${path}`, options);
+    res = await fetch(`/api${path}`, { ...options, headers: { ...(options.headers || {}), "X-Qabas-Owner": ownerId() } });
   } catch {
     throw new Error("تعذّر الاتصال بالخادم. تأكد من الإنترنت ثم أعد المحاولة.");
   }

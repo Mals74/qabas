@@ -103,6 +103,7 @@ export default function AddLesson() {
           <p className="notice small">انتهت الحصة اليومية للنموذج الأساسي؛ سيُستخدم نموذج احتياطي أقل دقة حتى تتجدد الحصة (10 صباحًا بتوقيت السعودية).</p>
         )}
         <p className="hint">أضف دروسًا يحق لك الوصول إليها. دفترك خاص بك، ولا يُفرَّغ كلام الحضور حفاظًا على خصوصيتهم.</p>
+        <p className="hint">الدرس الذي تضيفه وتفريغه وملاحظاتك تظهر على هذا الجهاز فقط، ولا يراها غيرك.</p>
         {error && <p className="notice error">{error}</p>}
         <button className="btn-primary wide" disabled={busy || status?.lessons_today?.left === 0}>{busy ? "جارٍ الإضافة…" : "ابدأ المعالجة"}</button>
       </form>

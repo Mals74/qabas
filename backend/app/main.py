@@ -11,7 +11,7 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -45,9 +45,26 @@ def startup() -> None:
             les.error = "انقطعت المعالجة لأن الخادم أُعيد تشغيله. احذف الدرس وأضفه مرة أخرى."
             s.add(les)
         s.commit()
+        _restore_lesson_count(s)
         if fresh and SHOW_SAMPLE:                         # the labelled demo lesson (turn off with SHOW_SAMPLE=0)
             _seed_sample(s)
     threading.Thread(target=_warm_up, daemon=True).start()
+
+
+def _restore_lesson_count(s: Session) -> None:
+    """With a lasting database (Postgres), a restart must not reset the daily lesson limit: count today's lessons."""
+    import zoneinfo
+    from datetime import timedelta
+    pacific = zoneinfo.ZoneInfo("America/Los_Angeles")         # the quota day used by ai/limits.py
+    today = datetime.now(pacific).date()
+    since = datetime.now(timezone.utc) - timedelta(days=2)
+    n = 0
+    for created in s.exec(select(Lesson.created_at).where(Lesson.owner != "")).all():
+        c = created if created.tzinfo else created.replace(tzinfo=timezone.utc)
+        if c >= since and c.astimezone(pacific).date() == today:
+            n += 1
+    if n:
+        limits.lessons.record(n)
 
 
 def _warm_up() -> None:
@@ -133,6 +150,30 @@ def card_out(c: Card, les: Optional[Lesson] = None) -> dict:
             "lesson_title": les.title if les else None}
 
 
+# ---------------- whose data: each device sees only its own lessons and notes ----------------
+# No accounts: the browser makes a random id once and sends it with every request (X-Qabas-Owner).
+# Lessons a student adds are visible only with that id; the ready-made lessons (owner "") are visible to everyone.
+# This keeps transcripts of a sheikh's lesson private to the student who added it instead of republishing them.
+
+def owner_id(x_qabas_owner: str = Header("")) -> str:
+    oid = (x_qabas_owner or "").strip()
+    return oid if re.fullmatch(r"[A-Za-z0-9-]{16,64}", oid) else ""
+
+
+def _visible(row, me: str) -> bool:
+    return row is not None and (not row.owner or row.owner == me)
+
+
+def _lesson_for(s: Session, lesson_id: int, me: str, write: bool = False) -> Lesson:
+    """The lesson if this device may see it (and change it, when write=True); 404 otherwise, so ids don't leak."""
+    les = s.get(Lesson, lesson_id)
+    if not _visible(les, me):
+        _404("الدرس غير موجود")
+    if write and les.owner != me:
+        raise HTTPException(403, "هذا من الدروس الجاهزة للعرض، ولا يمكن تعديله أو حذفه")
+    return les
+
+
 # ---------------- status ----------------
 
 @app.get("/api/status")
@@ -153,18 +194,21 @@ class BookIn(BaseModel):
 
 
 @app.get("/api/books")
-def list_books(s: Session = Depends(get_session)):
+def list_books(s: Session = Depends(get_session), me: str = Depends(owner_id)):
     out = []
-    for b in s.exec(select(Book).order_by(Book.created_at.desc())).all():
-        lessons = s.exec(select(Lesson).where(Lesson.book_id == b.id).order_by(Lesson.number)).all()
+    for b in s.exec(select(Book).where(Book.owner.in_(["", me])).order_by(Book.created_at.desc())).all():
+        lessons = s.exec(select(Lesson).where(Lesson.book_id == b.id, Lesson.owner.in_(["", me]))
+                         .order_by(Lesson.number)).all()
+        if not lessons and not b.owner:                  # a shared book with none of this device's lessons
+            continue
         out.append({"id": b.id, "title": b.title, "author": b.author, "lesson_count": len(lessons),
                     "last_lesson": lesson_card(lessons[-1]) if lessons else None})
     return out
 
 
 @app.post("/api/books")
-def create_book(body: BookIn, s: Session = Depends(get_session)):
-    b = Book(title=body.title.strip(), author=body.author.strip())
+def create_book(body: BookIn, s: Session = Depends(get_session), me: str = Depends(owner_id)):
+    b = Book(title=body.title.strip(), author=body.author.strip(), owner=me)
     s.add(b)
     s.commit()
     s.refresh(b)
@@ -172,15 +216,19 @@ def create_book(body: BookIn, s: Session = Depends(get_session)):
 
 
 @app.get("/api/books/{book_id}")
-def get_book(book_id: int, s: Session = Depends(get_session)):
-    b = s.get(Book, book_id) or _404("الكتاب غير موجود")
-    lessons = s.exec(select(Lesson).where(Lesson.book_id == b.id).order_by(Lesson.number)).all()
+def get_book(book_id: int, s: Session = Depends(get_session), me: str = Depends(owner_id)):
+    b = s.get(Book, book_id)
+    if not _visible(b, me):
+        _404("الكتاب غير موجود")
+    lessons = s.exec(select(Lesson).where(Lesson.book_id == b.id, Lesson.owner.in_(["", me]))
+                     .order_by(Lesson.number)).all()
     return {"id": b.id, "title": b.title, "author": b.author, "lessons": [lesson_card(l, b) for l in lessons]}
 
 
 @app.get("/api/books/{book_id}/cards")
-def book_cards(book_id: int, s: Session = Depends(get_session)):
-    rows = s.exec(select(Card, Lesson).where(Card.lesson_id == Lesson.id, Lesson.book_id == book_id)
+def book_cards(book_id: int, s: Session = Depends(get_session), me: str = Depends(owner_id)):
+    rows = s.exec(select(Card, Lesson).where(Card.lesson_id == Lesson.id, Lesson.book_id == book_id,
+                                             Lesson.owner.in_(["", me]))
                   .order_by(Lesson.number, Card.evidence_start)).all()
     return [card_out(c, l) for c, l in rows]
 
@@ -190,17 +238,17 @@ class AskIn(BaseModel):
 
 
 @app.post("/api/books/{book_id}/ask")
-def ask(book_id: int, body: AskIn, s: Session = Depends(get_session)):
+def ask(book_id: int, body: AskIn, s: Session = Depends(get_session), me: str = Depends(owner_id)):
     if not body.question.strip():
         raise HTTPException(400, "اكتب سؤالك")
-    return pipeline.ask_book(s, book_id, body.question.strip())
+    return pipeline.ask_book(s, book_id, body.question.strip(), owner=me)
 
 
 # ---------------- lessons ----------------
 
 @app.get("/api/lessons/recent")
-def recent_lessons(s: Session = Depends(get_session)):
-    rows = s.exec(select(Lesson, Book).where(Lesson.book_id == Book.id)
+def recent_lessons(s: Session = Depends(get_session), me: str = Depends(owner_id)):
+    rows = s.exec(select(Lesson, Book).where(Lesson.book_id == Book.id, Lesson.owner.in_(["", me]))
                   .order_by(Lesson.created_at.desc()).limit(10)).all()
     return [lesson_card(l, b) for l, b in rows]
 
@@ -216,7 +264,10 @@ def create_lesson(
     youtube_url: str = Form(""),
     file: Optional[UploadFile] = File(None),
     s: Session = Depends(get_session),
+    me: str = Depends(owner_id),
 ):
+    if not me:
+        raise HTTPException(400, "حدّث الصفحة ثم أعد المحاولة")      # every new lesson needs an owner
     # Budget: a daily cap on new lessons, checked before anything is saved
     if AI_PROVIDER == "gemini" and not limits.lessons.available():
         raise HTTPException(429, "بلغت النسخة التجريبية حدها اليومي من الدروس الجديدة (لأسباب تتعلق بالميزانية). "
@@ -225,18 +276,20 @@ def create_lesson(
     if not book_id:
         if not new_book_title.strip():
             raise HTTPException(400, "اختر كتابًا أو اكتب اسم كتاب جديد")
-        book = Book(title=new_book_title.strip())
+        book = Book(title=new_book_title.strip(), owner=me)
         s.add(book)
         s.commit()
         book_id = book.id
-    elif not s.get(Book, book_id):
+    elif not _visible(s.get(Book, book_id), me):
         raise HTTPException(404, "الكتاب غير موجود")
 
     if number is None:
-        count = s.exec(select(func.count()).select_from(Lesson).where(Lesson.book_id == book_id)).one()
+        count = s.exec(select(func.count()).select_from(Lesson).where(Lesson.book_id == book_id,
+                                                                      Lesson.owner.in_(["", me]))).one()
         number = count + 1
 
-    lesson = Lesson(book_id=book_id, title=title.strip(), sheikh=sheikh.strip(), date=date.strip(), number=number)
+    lesson = Lesson(book_id=book_id, title=title.strip(), sheikh=sheikh.strip(), date=date.strip(), number=number,
+                    owner=me)
     if youtube_url.strip():
         url = youtube.canonical(youtube_url)
         if not url:
@@ -263,16 +316,18 @@ def create_lesson(
 
 
 @app.get("/api/lessons/{lesson_id}")
-def get_lesson(lesson_id: int, s: Session = Depends(get_session)):
-    les = s.get(Lesson, lesson_id) or _404("الدرس غير موجود")
+def get_lesson(lesson_id: int, s: Session = Depends(get_session), me: str = Depends(owner_id)):
+    les = _lesson_for(s, lesson_id, me)
     book = s.get(Book, les.book_id)
     segs = s.exec(select(Segment).where(Segment.lesson_id == les.id).order_by(Segment.idx)).all()
-    notes = s.exec(select(Note).where(Note.lesson_id == les.id).order_by(Note.start)).all()
+    notes = s.exec(select(Note).where(Note.lesson_id == les.id, Note.owner == me).order_by(Note.start)).all() \
+        if me else []
     cards = s.exec(select(Card).where(Card.lesson_id == les.id).order_by(Card.evidence_start)).all()
     return {
         **lesson_card(les, book),
         "source_url": les.source_url,
-        "media_url": f"/api/lessons/{les.id}/media" if les.source_type == "file" else None,
+        "media_url": (f"/api/lessons/{les.id}/media" + (f"?owner={me}" if les.owner else ""))
+        if les.source_type == "file" else None,
         "media_kind": "video" if Path(les.file_path or "").suffix.lower() in (".mp4", ".webm", ".mov") else "audio",
         "youtube_id": _youtube_id(les.source_url),
         "mock_transcript": get_provider().name == "mock" and not les.is_sample,
@@ -282,12 +337,13 @@ def get_lesson(lesson_id: int, s: Session = Depends(get_session)):
         "cards": [card_out(c) for c in cards],
         "cards_rejected": les.cards_rejected,
         "quality": json.loads(les.quality_json or "{}"),
+        "mine": bool(les.owner) and les.owner == me,
     }
 
 
 @app.post("/api/lessons/{lesson_id}/reprocess")
-def reprocess(lesson_id: int, s: Session = Depends(get_session)):
-    les = s.get(Lesson, lesson_id) or _404("الدرس غير موجود")
+def reprocess(lesson_id: int, s: Session = Depends(get_session), me: str = Depends(owner_id)):
+    les = _lesson_for(s, lesson_id, me, write=True)
     if les.is_sample:
         raise HTTPException(400, "الدرس التجريبي لا يعاد تفريغه")
     _run_in_background(les.id)
@@ -295,9 +351,9 @@ def reprocess(lesson_id: int, s: Session = Depends(get_session)):
 
 
 @app.post("/api/lessons/{lesson_id}/retry-extras")
-def retry_extras(lesson_id: int, s: Session = Depends(get_session)):
+def retry_extras(lesson_id: int, s: Session = Depends(get_session), me: str = Depends(owner_id)):
     """Run the summary, the review cards and the hadith lookups again; the transcript is untouched."""
-    les = s.get(Lesson, lesson_id) or _404("الدرس غير موجود")
+    les = _lesson_for(s, lesson_id, me, write=True)
     if les.status == "processing":
         raise HTTPException(409, "الدرس قيد المعالجة الآن")
     threading.Thread(target=pipeline.retry_extras, args=(les.id,), daemon=True).start()
@@ -305,8 +361,8 @@ def retry_extras(lesson_id: int, s: Session = Depends(get_session)):
 
 
 @app.delete("/api/lessons/{lesson_id}")
-def delete_lesson(lesson_id: int, s: Session = Depends(get_session)):
-    les = s.get(Lesson, lesson_id) or _404("الدرس غير موجود")
+def delete_lesson(lesson_id: int, s: Session = Depends(get_session), me: str = Depends(owner_id)):
+    les = _lesson_for(s, lesson_id, me, write=True)
     for model in (Segment, Card, Note):
         for row in s.exec(select(model).where(model.lesson_id == les.id)).all():
             s.delete(row)
@@ -318,8 +374,9 @@ def delete_lesson(lesson_id: int, s: Session = Depends(get_session)):
 
 
 @app.get("/api/lessons/{lesson_id}/media")
-def lesson_media(lesson_id: int, s: Session = Depends(get_session)):
-    les = s.get(Lesson, lesson_id) or _404("الدرس غير موجود")
+def lesson_media(lesson_id: int, owner: str = "", s: Session = Depends(get_session),
+                 me: str = Depends(owner_id)):
+    les = _lesson_for(s, lesson_id, me or owner_id(owner))    # <audio src> can't send headers: ?owner=…
     if not les.file_path or not Path(les.file_path).exists():
         _404("لا يوجد ملف")
     return FileResponse(les.file_path)
@@ -333,9 +390,11 @@ class NoteIn(BaseModel):
 
 
 @app.post("/api/lessons/{lesson_id}/notes")
-def add_note(lesson_id: int, body: NoteIn, s: Session = Depends(get_session)):
-    s.get(Lesson, lesson_id) or _404("الدرس غير موجود")
-    n = Note(lesson_id=lesson_id, start=body.start, text=body.text.strip())
+def add_note(lesson_id: int, body: NoteIn, s: Session = Depends(get_session), me: str = Depends(owner_id)):
+    _lesson_for(s, lesson_id, me)
+    if not me:
+        raise HTTPException(400, "حدّث الصفحة ثم أعد المحاولة")
+    n = Note(lesson_id=lesson_id, start=body.start, text=body.text.strip(), owner=me)
     s.add(n)
     s.commit()
     s.refresh(n)
@@ -343,8 +402,10 @@ def add_note(lesson_id: int, body: NoteIn, s: Session = Depends(get_session)):
 
 
 @app.delete("/api/notes/{note_id}")
-def delete_note(note_id: int, s: Session = Depends(get_session)):
-    n = s.get(Note, note_id) or _404("الملاحظة غير موجودة")
+def delete_note(note_id: int, s: Session = Depends(get_session), me: str = Depends(owner_id)):
+    n = s.get(Note, note_id)
+    if not n or not me or n.owner != me:
+        _404("الملاحظة غير موجودة")
     s.delete(n)
     s.commit()
     return {"ok": True}
@@ -353,8 +414,9 @@ def delete_note(note_id: int, s: Session = Depends(get_session)):
 # ---------------- hadith takhrij ----------------
 
 @app.get("/api/segments/{segment_id}/takhrij")
-def takhrij(segment_id: int, s: Session = Depends(get_session)):
+def takhrij(segment_id: int, s: Session = Depends(get_session), me: str = Depends(owner_id)):
     seg = s.get(Segment, segment_id) or _404("المقطع غير موجود")
+    _lesson_for(s, seg.lesson_id, me)
     if seg.hadith_json:
         return json.loads(seg.hadith_json)
     result = hadith.takhrij(seg.hadith_query or seg.text, get_provider())
@@ -373,8 +435,11 @@ class ResolveIn(BaseModel):
 
 
 @app.post("/api/segments/{segment_id}/resolve")
-def resolve(segment_id: int, body: ResolveIn, s: Session = Depends(get_session)):
+def resolve(segment_id: int, body: ResolveIn, s: Session = Depends(get_session), me: str = Depends(owner_id)):
     seg = s.get(Segment, segment_id) or _404("المقطع غير موجود")
+    les = _lesson_for(s, seg.lesson_id, me)
+    if les.owner and les.owner != me:
+        _404("المقطع غير موجود")
     try:
         pipeline.resolve_mark(seg, body.mark_id, body.text)
     except KeyError:
@@ -413,8 +478,8 @@ def fahras_browse(prefix: str):
 
 
 @app.get("/api/search")
-def search(q: str = "", s: Session = Depends(get_session)):
-    return pipeline.search(s, q)
+def search(q: str = "", s: Session = Depends(get_session), me: str = Depends(owner_id)):
+    return pipeline.search(s, q, owner=me)
 
 
 # ---------------- helpers ----------------

@@ -10,6 +10,10 @@
 > copy `.env.example` to `.env`, put the key in it, then run one of the commands below.
 > Without a key the app still starts: the ready-made lessons, verse checks and hadith word search work; new lessons need the key.
 
+**Storage.** Locally the app uses SQLite (`backend/data/qabas.db`). The live link stores lessons and notes in a free
+Neon Postgres database: set `DATABASE_URL` to its connection string (`postgresql://…`); without it, Render's free
+disk is wiped on every restart. Lessons a student adds are visible only on the device that added them.
+
 ### Run it yourself
 
 ```bash

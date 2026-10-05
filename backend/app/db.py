@@ -12,8 +12,11 @@ from sqlmodel import Field, Session, SQLModel, create_engine
 from .config import DATABASE_URL
 
 # check_same_thread=False lets FastAPI's threads share the SQLite connection
-_connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, connect_args=_connect_args)
+IS_SQLITE = DATABASE_URL.startswith("sqlite")
+_connect_args = {"check_same_thread": False} if IS_SQLITE else {}
+# Hosted Postgres (Neon) closes idle connections and sleeps: check each connection before use, renew them hourly
+engine = create_engine(DATABASE_URL, connect_args=_connect_args,
+                       **({} if IS_SQLITE else {"pool_pre_ping": True, "pool_recycle": 1800, "pool_size": 5}))
 
 
 class Book(SQLModel, table=True):
@@ -21,6 +24,7 @@ class Book(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str
     author: str = ""                     # author of the matn
+    owner: str = Field(default="", index=True)   # "" = the ready-made lessons everyone sees; else one device's id
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -43,6 +47,7 @@ class Lesson(SQLModel, table=True):
     summary_json: str = "[]"             # AI summary points (labelled ملخص آلي)
     quality_json: str = "{}"             # two-pass stats: disagreements, resolved by re-listening, still unsure
     is_sample: bool = False              # sample/demo data, shown with a badge
+    owner: str = Field(default="", index=True)   # "" = ready-made lesson shown to everyone; else only its owner
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -83,14 +88,17 @@ class Note(SQLModel, table=True):
     lesson_id: int = Field(foreign_key="lesson.id", index=True)
     start: float = 0
     text: str
+    owner: str = Field(default="", index=True)   # notes are always private to the device that wrote them
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # Columns added after the first release: added to existing databases at startup
 _NEW_COLUMNS = {
-    "lesson": {"quality_json": "VARCHAR DEFAULT '{}'"},
-    "segment": {"uncertain_json": "VARCHAR DEFAULT '[]'", "low_confidence": "BOOLEAN DEFAULT 0",
-                "corrected": "BOOLEAN DEFAULT 0"},
+    "book": {"owner": "VARCHAR DEFAULT ''"},
+    "note": {"owner": "VARCHAR DEFAULT ''"},
+    "lesson": {"quality_json": "VARCHAR DEFAULT '{}'", "owner": "VARCHAR DEFAULT ''"},
+    "segment": {"uncertain_json": "VARCHAR DEFAULT '[]'", "low_confidence": "BOOLEAN DEFAULT FALSE",
+                "corrected": "BOOLEAN DEFAULT FALSE"},
 }
 
 

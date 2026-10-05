@@ -1,6 +1,7 @@
 fastapi>=0.115
 uvicorn[standard]>=0.30
 sqlmodel>=0.0.22
+psycopg[binary]>=3.2        # only used when DATABASE_URL points to Postgres (e.g. Neon)
 rapidfuzz>=3.9
 google-genai>=1.20
 httpx>=0.27

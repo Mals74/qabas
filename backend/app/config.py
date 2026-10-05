@@ -29,7 +29,11 @@ UPLOAD_DIR = DATA_DIR / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # SQLite now; swap the URL for PostgreSQL later without code changes
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'qabas.db'}")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip() or f"sqlite:///{DATA_DIR / 'qabas.db'}"
+# A hosted Postgres (e.g. Neon) gives postgres:// or postgresql:// links: use the psycopg 3 driver for them
+for _p in ("postgres://", "postgresql://"):
+    if DATABASE_URL.startswith(_p):
+        DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len(_p):]
 
 # Gemini settings. If no key is set, the app runs on the mock AI provider.
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
