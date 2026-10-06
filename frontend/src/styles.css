@@ -241,3 +241,6 @@ ul.plain { margin: 0; padding-inline-start: 18px; line-height: 2; color: var(--i
 .fahras-entry h4 { font-size: 15px; color: var(--gold-text); margin-bottom: 6px; }
 .fahras-entry p { margin: 0 0 6px; line-height: 1.9; }
 .fahras-source { margin-top: 4px; }
+
+/* play button + minute pill side by side in verse and hadith headers */
+.block-actions { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }

@@ -5,7 +5,7 @@ import { PageHeader } from "../components/Common.jsx";
 import { FahrasResults } from "../components/Fahras.jsx";
 import { Search } from "../components/Icons.jsx";
 
-const BOOKS = "النهاية في غريب الحديث والأثر، الفائق في غريب الحديث، الصحاح، القاموس المحيط، لسان العرب، تهذيب اللغة";
+const BOOKS = "الصحاح، القاموس المحيط، لسان العرب، تهذيب اللغة";
 
 export default function FahrasPage() {
   const [params, setParams] = useSearchParams();

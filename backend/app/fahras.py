@@ -1,11 +1,11 @@
-"""الفهرس: meanings of words from six classical Arabic dictionaries — no AI involved.
+"""الفهرس: the Arabic meaning of words from four classical dictionaries — no AI involved.
 
 Data: the dictionary table of the Jawami' al-Kalim database (Offok, published free by Islamweb), public-domain classical
 texts, one row per root:
-    النهاية في غريب الحديث والأثر (ابن الأثير) · الفائق في غريب الحديث (الزمخشري) · الصحاح (الجوهري)
-    القاموس المحيط (الفيروزآبادي) · لسان العرب (ابن منظور) · تهذيب اللغة (الأزهري)
-Shipped compressed (data/fahras.db.gz, 20 MB); unpacked once to data/fahras.db and read from disk, so it costs
-almost no memory. A lookup is an indexed primary-key search: O(log n) over 13,331 roots.
+    الصحاح (الجوهري) · القاموس المحيط (الفيروزآبادي) · لسان العرب (ابن منظور) · تهذيب اللغة (الأزهري)
+Books on غريب الحديث are left out on purpose (the reviewer's decision): the فهرس explains the Arabic meaning of a word,
+not the explanation of hadith wording. Shipped compressed (data/fahras.db.gz); unpacked to data/fahras.db and read
+from disk, so it costs almost no memory. A lookup is an indexed primary-key search: O(log n) over 12,787 roots.
 
 How a clicked word becomes a root, by rule only:
   1. remove harakat and Quranic marks, unify alif forms
@@ -28,10 +28,8 @@ from .config import DATA_DIR
 GZ = DATA_DIR / "fahras.db.gz"
 DB = DATA_DIR / "fahras.db"
 
-# Display order: the two books on غريب الحديث first, they fit the words in lessons best
+# Display order: the concise dictionaries first, the large ones after
 BOOKS = [
-    ("nehay", "النهاية في غريب الحديث والأثر", "ابن الأثير"),
-    ("faaq", "الفائق في غريب الحديث", "الزمخشري"),
     ("sa7a7", "الصحاح", "الجوهري"),
     ("mo7eet", "القاموس المحيط", "الفيروزآبادي"),
     ("lesan", "لسان العرب", "ابن منظور"),
@@ -53,12 +51,12 @@ _lock = threading.Lock()
 
 def _ensure_db() -> bool:
     """Unpack the dictionaries the first time they are needed. False if the data file is missing."""
-    if DB.exists():
-        return True
+    if DB.exists() and (not GZ.exists() or DB.stat().st_mtime >= GZ.stat().st_mtime):
+        return True                                  # unpacked, and not older than the shipped file
     if not GZ.exists():
         return False
     with _lock:
-        if not DB.exists():
+        if not DB.exists() or DB.stat().st_mtime < GZ.stat().st_mtime:
             tmp = DB.with_suffix(".tmp")
             with gzip.open(GZ, "rb") as src, open(tmp, "wb") as dst:
                 shutil.copyfileobj(src, dst, 1 << 20)

@@ -81,7 +81,7 @@ function wordAt(x, y) {
   }
   if (!node || node.nodeType !== 3) return "";
   const text = node.textContent;
-  const isLetter = (ch) => /[ء-ي٠-ٰٱ-ۓۖ-ۭ࣓-ࣿ]/.test(ch);
+  const isLetter = (ch) => /[\u0621-\u065F\u0670-\u06D3\u06D6-\u06ED\u08D3-\u08FF]/.test(ch);   // letters and their harakat
   let a = offset, b = offset;
   while (a > 0 && isLetter(text[a - 1])) a--;
   while (b < text.length && isLetter(text[b])) b++;

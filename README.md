@@ -123,8 +123,8 @@ ask the lessons: whole book in the model's long context → citations verified a
   (SHA-256 a7b0e559…dfd72c), copied as is into `backend/data/quran_kfgqpc.json` and shown in the Complex's own
   font (`frontend/public/fonts/uthmanic_hafs_v20.ttf`).
 - الفهرس (word meanings): the dictionary table of the Jawami' al-Kalim database (Offok, published free by Islamweb;
-  classical texts in the public domain), via https://huggingface.co/datasets/angryreply/jawami3_alkalem — النهاية في
-  غريب الحديث، الفائق، الصحاح، القاموس المحيط، لسان العرب، تهذيب اللغة; 13,331 roots in `backend/data/fahras.db.gz`.
+  classical texts in the public domain), via https://huggingface.co/datasets/angryreply/jawami3_alkalem — الصحاح،
+  القاموس المحيط، لسان العرب، تهذيب اللغة; 12,787 roots in `backend/data/fahras.db.gz`.
   The root of a tapped word is found by morphology rules (`backend/app/fahras.py`), no AI.
   Matching uses `backend/data/quran_uthmani.json` (quran-json package, QuranEnc Uthmani text).
 - No user accounts yet: this is a single private notebook.

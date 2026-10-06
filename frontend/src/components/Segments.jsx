@@ -39,7 +39,10 @@ export function QuranBlock({ seg, onSeek, onChange }) {
     <div className="block quran">
       <div className="block-head">
         <span className="block-title">الآية</span>
-        <TimePill time={seg.time} onClick={() => onSeek(seg.start)} />
+        <span className="block-actions">
+          <PlayButton start={seg.start} onSeek={onSeek} />
+          <TimePill time={seg.time} onClick={() => onSeek(seg.start)} />
+        </span>
       </div>
       {verified ? (
         <>
@@ -132,7 +135,10 @@ export function HadithBlock({ seg, onSeek, onChange }) {
     <div className="block hadith">
       <div className="block-head">
         <span className="block-title">حديث ذكره الشيخ</span>
-        <TimePill time={seg.time} onClick={() => onSeek(seg.start)} />
+        <span className="block-actions">
+          <PlayButton start={seg.start} onSeek={onSeek} />
+          <TimePill time={seg.time} onClick={() => onSeek(seg.start)} />
+        </span>
       </div>
       <MarkedText seg={seg} onSeek={onSeek} onChange={onChange} className="recited" />
       <SourceTag kind="sheikh">من كلام الشيخ كما قاله (لا يُستبدل بنص آخر)</SourceTag>

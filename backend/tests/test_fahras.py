@@ -19,7 +19,8 @@ def test_lookup_cites_the_books():
     first = res["roots"][0]
     assert first["root"] == "غرر"
     books = [e["book"] for e in first["entries"]]
-    assert books[0] == "النهاية في غريب الحديث والأثر"           # غريب الحديث first
+    assert books[0] == "الصحاح"
+    assert not {"النهاية في غريب الحديث والأثر", "الفائق في غريب الحديث"} & set(books)   # غريب الحديث books left out
     assert all(e["text"] and e["author"] for e in first["entries"])
 
 
