@@ -111,7 +111,7 @@ ask the lessons: whole book in the model's long context → citations verified a
 - `backend/app/pipeline.py` — lesson processing, card checks, grounded Q&A, search
 - `backend/app/ai/` — Gemini provider, two-pass consensus (`consensus.py`), mock provider, prompts, sample data
 - `frontend/src/` — React app (RTL), screens follow the design mockups
-- `SOURCES.md` — draft sources and licenses log (challenge terms, Clause 9)
+- `SOURCES.md` — the Islamic sources (name, issuing body, link, use) and the components and licenses log
 
 ## Known limits (prototype)
 
