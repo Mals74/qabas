@@ -9,6 +9,9 @@
 > To run it from the source code you need **your own Google Gemini API key** (free at https://aistudio.google.com/apikey):
 > copy `.env.example` to `.env`, put the key in it, then run one of the commands below.
 > Without a key the app still starts: the ready-made lessons, verse checks and hadith word search work; new lessons need the key.
+>
+> إذا ظهر خطأ عند إضافة رابط يوتيوب، فقد تكون قراءة روابط يوتيوب متوقفة مؤقتًا لدى Google؛ ارفع الدرس ملفًا صوتيًا بدلًا منه. /
+> If adding a YouTube link fails, Google's reading of YouTube links may be temporarily down; upload an audio file instead.
 
 **Storage.** Locally the app uses SQLite (`backend/data/qabas.db`). The live link stores lessons and notes in a free
 Neon Postgres database: set `DATABASE_URL` to its connection string (`postgresql://…`); without it, Render's free

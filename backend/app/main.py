@@ -222,7 +222,25 @@ def get_book(book_id: int, s: Session = Depends(get_session), me: str = Depends(
         _404("الكتاب غير موجود")
     lessons = s.exec(select(Lesson).where(Lesson.book_id == b.id, Lesson.owner.in_(["", me]))
                      .order_by(Lesson.number)).all()
-    return {"id": b.id, "title": b.title, "author": b.author, "lessons": [lesson_card(l, b) for l in lessons]}
+    return {"id": b.id, "title": b.title, "author": b.author, "mine": bool(me) and b.owner == me,
+            "lessons": [lesson_card(l, b) for l in lessons]}
+
+
+@app.delete("/api/books/{book_id}")
+def delete_book(book_id: int, s: Session = Depends(get_session), me: str = Depends(owner_id)):
+    """A notebook this device made, with all of its lessons. The ready-made books can't be deleted."""
+    b = s.get(Book, book_id)
+    if not _visible(b, me):
+        _404("الكتاب غير موجود")
+    if not b.owner or b.owner != me:
+        raise HTTPException(403, "هذا الكتاب من الدروس الجاهزة ولا يُحذف")
+    lessons = s.exec(select(Lesson).where(Lesson.book_id == b.id)).all()
+    for les in lessons:
+        _delete_lesson_rows(s, les)
+    s.flush()                                         # lessons go before the book (foreign key on Postgres)
+    s.delete(b)
+    s.commit()
+    return {"ok": True}
 
 
 @app.get("/api/books/{book_id}/cards")
@@ -363,14 +381,20 @@ def retry_extras(lesson_id: int, s: Session = Depends(get_session), me: str = De
 @app.delete("/api/lessons/{lesson_id}")
 def delete_lesson(lesson_id: int, s: Session = Depends(get_session), me: str = Depends(owner_id)):
     les = _lesson_for(s, lesson_id, me, write=True)
+    _delete_lesson_rows(s, les)
+    s.commit()
+    return {"ok": True}
+
+
+def _delete_lesson_rows(s: Session, les: Lesson):
+    """The lesson with its transcript, cards, notes and uploaded file (the caller commits)."""
     for model in (Segment, Card, Note):
         for row in s.exec(select(model).where(model.lesson_id == les.id)).all():
             s.delete(row)
+    s.flush()                                         # children first: Postgres checks the foreign keys
     if les.file_path:
         Path(les.file_path).unlink(missing_ok=True)
     s.delete(les)
-    s.commit()
-    return {"ok": True}
 
 
 @app.get("/api/lessons/{lesson_id}/media")

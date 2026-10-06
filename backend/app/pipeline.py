@@ -77,11 +77,16 @@ def process_lesson(lesson_id: int, provider=None) -> None:
 
             _finish(session, lesson, provider, segments)
         except Exception as e:
+            message = str(e)
             if type(e).__name__ in ("QuotaError", "BusyError"):   # expected conditions: the message says it all
                 print("stopped:", e)
+                if type(e).__name__ == "BusyError" and lesson.source_type == "youtube":
+                    # Google's reading of YouTube links fails on its own at times (500 INTERNAL); a file still works
+                    message += (" وقد تكون قراءة روابط يوتيوب متوقفة مؤقتًا لدى Google: جرّب رفع الدرس ملفًا صوتيًا "
+                                "من «تسجيل من الجهاز» في صفحة إضافة درس.")
             else:
                 traceback.print_exc()
-            _set(session, lesson, status="error", error=str(e)[:500], progress="")
+            _set(session, lesson, status="error", error=message[:500], progress="")
 
 
 def _finish(session: Session, lesson: Lesson, provider, segments: list[Segment]) -> None:

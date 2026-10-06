@@ -81,7 +81,7 @@ export default function AddLesson() {
         {source === "youtube" ? (
           <label>رابط الدرس أو البث
             <input required dir="ltr" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=…" />
-            <span className="hint">يُرسل الرابط إلى Gemini مباشرة دون تنزيل الفيديو.</span>
+            <span className="hint">يُرسل الرابط إلى Gemini مباشرة دون تنزيل الفيديو. إذا تعذّرت قراءة الرابط، ارفع الدرس ملفًا صوتيًا من «تسجيل من الجهاز».</span>
           </label>
         ) : (
           <label>ملف التسجيل (صوت أو فيديو)

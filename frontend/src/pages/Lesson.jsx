@@ -193,7 +193,7 @@ export default function LessonPage() {
           )}
 
           <button className="btn-danger-link" onClick={() => {
-            if (confirm("حذف هذا الدرس من دفترك؟")) api.deleteLesson(lesson.id).then(() => nav("/"));
+            if (confirm("حذف هذا الدرس من دفترك؟")) api.deleteLesson(lesson.id).then(() => nav(`/books/${lesson.book_id}`));
           }}><Trash /> حذف الدرس</button>
         </>
       )}

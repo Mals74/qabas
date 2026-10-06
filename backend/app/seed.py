@@ -161,7 +161,7 @@ def rehadith(only: str = "") -> None:
 
 def explain(error: str) -> str:
     """One plain sentence for the person running the notebook."""
-    if "503" in error or "مزدحمة" in error or "UNAVAILABLE" in error:
+    if "503" in error or "مزدحمة" in error or "متوقفة" in error or "UNAVAILABLE" in error:
         return ("Google's servers were overloaded (not your fault). Careful: Google counts failed attempts against the "
                 "daily quota, so check the Rate limit page in AI Studio before running this cell again.")
     if "الحد اليومي" in error or "PerDay" in error:

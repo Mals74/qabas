@@ -46,6 +46,7 @@ export const api = {
   books: () => request("/books"),
   book: (id) => request(`/books/${id}`),
   createBook: (data) => request("/books", json("POST", data)),
+  deleteBook: (id) => request(`/books/${id}`, { method: "DELETE" }),
   bookCards: (id) => request(`/books/${id}/cards`),
   ask: (id, question) => request(`/books/${id}/ask`, json("POST", { question })),
   recent: () => request("/lessons/recent"),
